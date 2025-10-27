@@ -1222,7 +1222,7 @@
         <div id="qrCodeModal" class="modal">
             <div class="modal-content">
                 <span class="close">&times;</span>
-                <h2>📱 掃描 QR Code 加入歌曲</h2>
+                <h2 style="margin-bottom: 25px;">📱 掃描 QR Code 加入歌曲</h2>
                 <div style="text-align: center; padding: 20px;">
                     <img src="ktv_qr_code.png" alt="KTV QR Code" style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);">
                 </div>
@@ -2155,26 +2155,49 @@
 
                 searchResults.innerHTML = items.map(item => {
                     const videoId = item.id.videoId;
-                    const title = item.snippet.title;
-                    const channelTitle = item.snippet.channelTitle;
+                    const title = item.snippet.title.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+                    const channelTitle = item.snippet.channelTitle.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
                     const thumbnailUrl = item.snippet.thumbnails.medium.url;
                     const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
                     return `
                         <div class="search-result-item">
-                            <div class="search-result-thumbnail" onclick="event.stopPropagation(); window.open('${videoUrl}', '_blank'); return false;" style="cursor: pointer;">
+                            <div class="search-result-thumbnail" data-video-url="${videoUrl}" style="cursor: pointer;">
                                 <img src="${thumbnailUrl}" alt="${title}">
                             </div>
                             <div class="search-result-info">
                                 <h4>${title}</h4>
                                 <p>${channelTitle}</p>
                             </div>
-                            <button class="search-result-add-btn" data-video-id="${videoId}" onclick="event.stopPropagation(); addSongFromSearch('${videoUrl.replace(/'/g, "\\'")}', '${title.replace(/'/g, "\\'")}', this)">
+                            <button class="search-result-add-btn" data-video-id="${videoId}" data-video-url="${videoUrl}" data-video-title="${title}">
                                 ➕ 加入
                             </button>
                         </div>
                     `;
                 }).join('');
+                
+                // 為縮圖添加點擊事件 - 在 YouTube 預覽
+                document.querySelectorAll('.search-result-thumbnail').forEach(thumbnail => {
+                    thumbnail.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const url = this.getAttribute('data-video-url');
+                        if (url) {
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                        }
+                    });
+                });
+                
+                // 為每個按鈕添加事件監聽器
+                document.querySelectorAll('.search-result-add-btn').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const url = this.getAttribute('data-video-url');
+                        const title = this.getAttribute('data-video-title');
+                        addSongFromSearch(url, title, this);
+                    });
+                });
             }
 
             // 從搜尋結果加入歌曲
