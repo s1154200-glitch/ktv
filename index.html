@@ -1,0 +1,2319 @@
+    <!DOCTYPE html>
+    <html lang="zh-TW">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>KTV 排隊系統</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background-attachment: fixed;
+                min-height: 100vh;
+                padding: 20px;
+                color: #333;
+            }
+
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+
+            /* Header */
+            header {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                padding: 30px;
+                border-radius: 20px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+                margin-bottom: 30px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 20px;
+                border: 2px solid rgba(255, 255, 255, 0.3);
+            }
+
+            header h1 {
+                font-size: 2.5em;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                text-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+            }
+
+            .header-buttons {
+                display: flex;
+                gap: 10px;
+            }
+
+            /* Buttons */
+            .btn {
+                padding: 12px 24px;
+                border: none;
+                border-radius: 10px;
+                font-size: 1em;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                position: relative;
+                overflow: hidden;
+            }
+
+            .btn::before {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 0;
+                height: 0;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.3);
+                transform: translate(-50%, -50%);
+                transition: width 0.6s, height 0.6s;
+            }
+
+            .btn:active::before {
+                width: 300px;
+                height: 300px;
+            }
+
+            .btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            }
+
+            .btn:active {
+                transform: translateY(0);
+            }
+
+            .btn:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+            }
+
+            .btn-primary {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+            }
+
+            .btn-secondary {
+                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                color: white;
+            }
+
+            .btn-control {
+                background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+                color: white;
+                font-size: 1.2em;
+                padding: 15px 30px;
+            }
+
+            .btn-warning {
+                background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+                color: white;
+                width: 100%;
+                margin-top: 10px;
+            }
+
+            .btn-danger {
+                background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+                color: white;
+                width: 100%;
+                margin-top: 10px;
+            }
+
+            .btn-large {
+                width: 100%;
+                padding: 15px;
+                font-size: 1.1em;
+            }
+
+            /* Tab Navigation */
+            .tab-navigation {
+                display: flex;
+                gap: 0;
+                margin-bottom: 20px;
+                background: rgba(224, 224, 224, 0.3);
+                backdrop-filter: blur(10px);
+                border-radius: 12px;
+                padding: 4px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+
+            .tab-btn {
+                flex: 1;
+                padding: 12px 20px;
+                border: none;
+                background: transparent;
+                color: #666;
+                font-size: 1em;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                border-radius: 10px;
+                position: relative;
+            }
+
+            .tab-btn::after {
+                content: '';
+                position: absolute;
+                bottom: 0;
+                left: 50%;
+                width: 0;
+                height: 2px;
+                background: linear-gradient(90deg, #667eea, #764ba2);
+                transform: translateX(-50%);
+                transition: width 0.3s ease;
+            }
+
+            .tab-btn.active {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+                transform: translateY(-2px);
+            }
+
+            .tab-btn.active::after {
+                width: 80%;
+            }
+
+            .tab-btn:hover:not(.active) {
+                background: rgba(255, 255, 255, 0.5);
+                transform: translateY(-1px);
+            }
+
+            .tab-content {
+                display: none;
+            }
+
+            .tab-content.active {
+                display: block;
+            }
+
+            /* Sections */
+            section {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                padding: 30px;
+                border-radius: 20px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+                margin-bottom: 30px;
+                border: 2px solid rgba(255, 255, 255, 0.3);
+            }
+
+            section h2 {
+                font-size: 1.8em;
+                margin-bottom: 20px;
+                color: #667eea;
+            }
+
+            /* Now Playing */
+            .current-song-card {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 30px;
+                border-radius: 15px;
+                color: white;
+                box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+                animation: fadeIn 0.5s ease;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .current-song-card::before {
+                content: '';
+                position: absolute;
+                top: -50%;
+                right: -50%;
+                width: 200%;
+                height: 200%;
+                background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+                animation: pulse 3s ease-in-out infinite;
+            }
+
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); opacity: 0.5; }
+                50% { transform: scale(1.1); opacity: 0.8; }
+            }
+
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+
+            .current-song-card .song-info {
+                position: relative;
+                z-index: 1;
+            }
+
+            .current-song-card .song-info h3 {
+                font-size: 2em;
+                margin-bottom: 10px;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
+
+            .current-song-card .song-info p {
+                font-size: 1.2em;
+                opacity: 0.9;
+                margin-bottom: 5px;
+                text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            }
+
+            .current-song-thumbnail {
+                width: 200px;
+                height: 150px;
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                flex-shrink: 0;
+                position: relative;
+                z-index: 1;
+                border: 3px solid rgba(255,255,255,0.3);
+                transition: transform 0.3s ease;
+            }
+
+            .current-song-thumbnail:hover {
+                transform: scale(1.05);
+            }
+
+            .current-song-thumbnail img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            .control-panel-thumbnail {
+                width: 120px;
+                height: 90px;
+            }
+
+            .control-panel-thumbnail img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                border-radius: 12px;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+                border: 2px solid rgba(255, 255, 255, 0.5);
+            }
+
+            .no-song {
+                text-align: center;
+                padding: 40px;
+                font-size: 1.2em;
+                opacity: 0.7;
+            }
+
+            /* Player */
+            .player-section {
+                background: #000;
+            }
+
+            #player-container {
+                position: relative;
+                padding-bottom: 56.25%; /* 16:9 */
+                height: 0;
+                overflow: hidden;
+            }
+
+            #player {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+            }
+
+            /* Queue List */
+            .queue-list {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                max-height: 600px;
+                overflow-y: auto;
+                padding-right: 10px;
+            }
+
+            .queue-list::-webkit-scrollbar {
+                width: 8px;
+            }
+
+            .queue-list::-webkit-scrollbar-track {
+                background: #f1f1f1;
+                border-radius: 10px;
+            }
+
+            .queue-list::-webkit-scrollbar-thumb {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 10px;
+            }
+
+            .queue-list::-webkit-scrollbar-thumb:hover {
+                background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            }
+
+            .queue-item {
+                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+                padding: 15px;
+                border-radius: 15px;
+                display: flex;
+                gap: 15px;
+                align-items: center;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                cursor: move;
+                user-select: none;
+            }
+
+            .queue-item.playing {
+                background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+                box-shadow: 0 5px 20px rgba(253, 203, 110, 0.5);
+                border: 2px solid #fdcb6e;
+            }
+
+            .queue-item.completed {
+                background: linear-gradient(135deg, #dfe6e9 0%, #b2bec3 100%);
+                opacity: 0.6;
+                cursor: default;
+            }
+
+            .queue-item:hover {
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+            }
+
+            .queue-item.completed:hover {
+                transform: none;
+            }
+
+            .queue-item.sortable-chosen {
+                cursor: grabbing;
+            }
+
+            .queue-item.sortable-ghost {
+                opacity: 0.3;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+
+            .queue-item.sortable-drag {
+                opacity: 1;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+                transform: rotate(2deg) scale(1.05);
+            }
+
+            .queue-item-thumbnail {
+                flex-shrink: 0;
+                width: 120px;
+                height: 90px;
+                border-radius: 10px;
+                overflow: hidden;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+                position: relative;
+            }
+
+            .queue-item-thumbnail img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+
+
+            .queue-item-info {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .queue-item-number {
+                font-size: 1.8em;
+                font-weight: bold;
+                color: #667eea;
+                min-width: 40px;
+                text-align: center;
+            }
+
+            .queue-item-info h4 {
+                font-size: 1.2em;
+                margin-bottom: 5px;
+                color: #333;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .queue-item-drag-handle {
+                font-size: 1em;
+                color: #999;
+                cursor: move;
+                padding: 0 5px;
+            }
+
+            .queue-item-drag-handle:hover {
+                color: #667eea;
+            }
+
+            .queue-item-info p {
+                color: #666;
+                font-size: 0.9em;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .queue-item-actions button {
+                background: #ff6b6b;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: 600;
+                transition: all 0.3s ease;
+                white-space: nowrap;
+            }
+
+            .queue-item-actions button:hover {
+                background: #ee5a6f;
+                transform: scale(1.05);
+            }
+
+            .empty-queue {
+                text-align: center;
+                padding: 60px 20px;
+                color: #999;
+                font-size: 1.2em;
+            }
+
+            /* Modal */
+            .modal {
+                display: none;
+                position: fixed;
+                z-index: 1000;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                overflow: auto;
+                background-color: rgba(0, 0, 0, 0.6);
+                backdrop-filter: blur(5px);
+            }
+
+            .modal-content {
+                background: white;
+                margin: 5% auto;
+                padding: 40px;
+                border-radius: 20px;
+                width: 90%;
+                max-width: 600px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                animation: slideIn 0.3s ease;
+            }
+
+            @keyframes slideIn {
+                from {
+                    transform: translateY(-50px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+            }
+
+            .close {
+                color: #aaa;
+                float: right;
+                font-size: 28px;
+                font-weight: bold;
+                cursor: pointer;
+                transition: color 0.3s ease;
+            }
+
+            .close:hover {
+                color: #000;
+            }
+
+            /* Form */
+            .form-group {
+                margin-bottom: 20px;
+            }
+
+            .form-group label {
+                display: block;
+                margin-bottom: 8px;
+                font-weight: 600;
+                color: #333;
+            }
+
+            .form-group input {
+                width: 100%;
+                padding: 12px;
+                border: 2px solid #e0e0e0;
+                border-radius: 10px;
+                font-size: 1em;
+                transition: border-color 0.3s ease;
+            }
+
+            .form-group input:focus {
+                outline: none;
+                border-color: #667eea;
+            }
+
+            .form-group small {
+                display: block;
+                margin-top: 5px;
+                color: #999;
+                font-size: 0.85em;
+            }
+
+            /* Add Song Tab Content */
+            .add-song-tab-content {
+                display: none;
+            }
+
+            .add-song-tab-content.active {
+                display: block;
+            }
+
+            /* Search Results */
+            .search-result-item {
+                display: flex;
+                gap: 15px;
+                align-items: center;
+                padding: 12px;
+                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+                border-radius: 12px;
+                margin-bottom: 10px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+
+            .search-result-item:hover {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                background: linear-gradient(135deg, #e8eaf6 0%, #b8c5e0 100%);
+            }
+
+            .search-result-thumbnail {
+                width: 120px;
+                height: 90px;
+                border-radius: 8px;
+                overflow: hidden;
+                flex-shrink: 0;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            }
+
+            .search-result-thumbnail img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            .search-result-info {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .search-result-info h4 {
+                font-size: 1.1em;
+                margin-bottom: 5px;
+                color: #333;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                line-clamp: 2;
+                -webkit-box-orient: vertical;
+            }
+
+            .search-result-info p {
+                font-size: 0.85em;
+                color: #666;
+            }
+
+            .search-result-add-btn {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: 600;
+                white-space: nowrap;
+                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                flex-shrink: 0;
+                position: relative;
+                overflow: hidden;
+                min-width: 90px;
+            }
+
+            .search-result-add-btn::before {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 0;
+                height: 0;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.3);
+                transform: translate(-50%, -50%);
+                transition: width 0.6s, height 0.6s;
+            }
+
+            .search-result-add-btn:active::before {
+                width: 200px;
+                height: 200px;
+            }
+
+            .search-result-add-btn:hover:not(:disabled) {
+                transform: scale(1.05);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            }
+
+            .search-result-add-btn:disabled {
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                cursor: not-allowed;
+                transform: scale(1);
+            }
+
+            .search-result-add-btn.added {
+                animation: addedAnimation 0.6s ease;
+            }
+
+            @keyframes addedAnimation {
+                0% {
+                    transform: scale(1);
+                }
+                50% {
+                    transform: scale(1.2) rotate(5deg);
+                }
+                100% {
+                    transform: scale(1);
+                }
+            }
+
+            /* Pagination */
+            .pagination {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 15px;
+                margin-top: 20px;
+                padding: 15px;
+            }
+
+            .pagination button {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: 600;
+                transition: all 0.3s ease;
+            }
+
+            .pagination button:hover:not(:disabled) {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            }
+
+            .pagination button:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            .pagination-info {
+                font-size: 0.9em;
+                color: #666;
+                font-weight: 600;
+            }
+
+            /* Control Panel */
+            .control-panel {
+                padding: 20px 0;
+            }
+
+            .control-info {
+                background: #f5f7fa;
+                padding: 20px;
+                border-radius: 10px;
+                margin-bottom: 20px;
+            }
+
+            .control-info p {
+                margin-bottom: 10px;
+                font-size: 1.1em;
+            }
+
+            .control-buttons {
+                display: flex;
+                gap: 15px;
+                justify-content: center;
+                margin-bottom: 20px;
+            }
+
+            .control-actions {
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* Responsive */
+            @media (max-width: 768px) {
+                body {
+                    padding: 10px;
+                }
+
+                .container {
+                    max-width: 100%;
+                }
+
+                header {
+                    flex-direction: column;
+                    text-align: center;
+                    padding: 20px;
+                }
+
+                header h1 {
+                    font-size: 1.5em;
+                }
+
+                .header-buttons {
+                    width: 100%;
+                    flex-direction: column;
+                }
+
+                .header-buttons .btn {
+                    font-size: 0.9em;
+                    padding: 10px 20px;
+                }
+
+                /* 縮小 section 內距 */
+                section {
+                    padding: 15px;
+                    margin-bottom: 15px;
+                }
+
+                section h2 {
+                    font-size: 1.3em;
+                    margin-bottom: 15px;
+                }
+
+                /* 現正播放區域 */
+                .current-song-card {
+                    padding: 15px;
+                }
+
+                .current-song-card .song-info h3 {
+                    font-size: 0.85em !important;
+                    margin-bottom: 8px;
+                    line-height: 1.4;
+                    word-wrap: break-word;
+                }
+
+                .current-song-card .song-info {
+                    gap: 12px !important;
+                }
+
+                .current-song-card .song-info p {
+                    font-size: 0.9em;
+                }
+
+                .current-song-thumbnail {
+                    width: 80px;
+                    height: 60px;
+                }
+
+                .control-panel-thumbnail {
+                    width: 120px;
+                    height: 90px;
+                }   
+
+                .no-song {
+                    padding: 20px;
+                    font-size: 1em;
+                }
+
+                /* 播放器區域 */
+                .player-section {
+                    padding: 0;
+                }
+
+                /* 排隊列表 */
+                .queue-list {
+                    gap: 10px;
+                    max-height: 400px;
+                }
+
+                .control-buttons {
+                    flex-direction: column;
+                }
+
+                .queue-item {
+                    flex-direction: row;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 10px;
+                }
+
+                .queue-item-drag-handle {
+                    font-size: 1.2em;
+                    padding: 0 3px;
+                }
+
+                .queue-item-thumbnail {
+                    width: 60px;
+                    height: 45px;
+                }
+
+                .queue-item-number {
+                    font-size: 1em;
+                    min-width: 25px;
+                }
+
+                .queue-item-info {
+                    flex: 1;
+                    min-width: 0;
+                }
+
+                .queue-item-info h4 {
+                    font-size: 0.85em;
+                    line-height: 1.3;
+                    word-wrap: break-word;
+                    white-space: normal;
+                    overflow: hidden;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 2;
+                    line-clamp: 2;
+                    -webkit-box-orient: vertical;
+                }
+
+                .queue-item-info p {
+                    font-size: 0.75em;
+                }
+
+                .queue-item-actions {
+                    width: auto;
+                    flex-shrink: 0;
+                }
+
+                .queue-item-actions button {
+                    padding: 5px 10px;
+                    font-size: 0.8em;
+                }
+
+                .empty-queue {
+                    padding: 30px 10px;
+                    font-size: 0.9em;
+                }
+
+                /* 優化下一首歌曲區域 */
+                .next-song-section {
+                    padding: 12px;
+                }
+
+                .next-song-section h2 {
+                    font-size: 1.1em;
+                }
+
+                /* Modal 內容 */
+                .modal-content {
+                    width: 95%;
+                    margin: 10% auto;
+                    padding: 20px;
+                }
+
+                .modal-content h2 {
+                    font-size: 1.3em;
+                }
+
+                .form-group label {
+                    font-size: 0.9em;
+                }
+
+                .form-group input {
+                    padding: 10px;
+                    font-size: 0.9em;
+                }
+
+                .form-group small {
+                    font-size: 0.8em;
+                }
+
+                .btn-large {
+                    padding: 12px;
+                    font-size: 1em;
+                }
+
+                /* 控制面板 */
+                .control-info {
+                    padding: 15px;
+                    font-size: 0.9em;
+                }
+
+                .control-info p {
+                    font-size: 0.95em;
+                    margin-bottom: 8px;
+                }
+
+                .btn-control {
+                    font-size: 0.85em;
+                    padding: 10px 15px;
+                }
+
+                /* 控制面板按鈕優化 */
+                #controlModal .modal-content {
+                    padding: 15px;
+                }
+
+                /* 控制面板正在播放字體 */
+                #controlCurrentSong {
+                    font-size: 0.85em !important;
+                }
+
+                #controlModal .btn {
+                    font-size: 0.8em !important;
+                    padding: 10px 6px !important;
+                }
+
+                #controlModal .btn div:first-child {
+                    font-size: 1.1em !important;
+                }
+
+                #controlModal .btn div:last-child {
+                    font-size: 0.7em !important;
+                }
+
+                /* 搜尋結果手機版 */
+                #searchResults {
+                    max-height: 250px !important;
+                }
+
+                .search-result-item {
+                    flex-direction: row;
+                    gap: 8px;
+                    padding: 10px;
+                }
+
+                .search-result-thumbnail {
+                    width: 60px;
+                    height: 45px;
+                }
+
+                .search-result-info h4 {
+                    font-size: 0.85em;
+                    -webkit-line-clamp: 2;
+                    line-clamp: 2;
+                }
+
+                .search-result-info p {
+                    font-size: 0.75em;
+                }
+
+                .search-result-add-btn {
+                    padding: 6px 12px;
+                    font-size: 0.8em;
+                    white-space: nowrap;
+                }
+
+                /* 分頁按鈕手機版 */
+                .pagination {
+                    padding: 10px;
+                    gap: 10px;
+                }
+
+                .pagination button {
+                    padding: 8px 12px;
+                    font-size: 0.85em;
+                }
+
+                .pagination-info {
+                    font-size: 0.85em;
+                }
+            }
+
+            /* Loading Animation */
+            .loading {
+                display: inline-block;
+                width: 20px;
+                height: 20px;
+                border: 3px solid rgba(255, 255, 255, 0.3);
+                border-radius: 50%;
+                border-top-color: white;
+                animation: spin 1s ease-in-out infinite;
+            }
+
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+
+            /* Control Panel Button Hover Effects */
+            #controlModal .btn:hover {
+                transform: translateY(-3px) scale(1.05);
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            }
+
+            #controlModal .btn:active {
+                transform: translateY(0) scale(0.98);
+            }
+
+            #playPauseBtn:hover {
+                box-shadow: 0 8px 25px rgba(253, 203, 110, 0.6) !important;
+            }
+
+            #prevBtn:hover, #nextBtn:hover {
+                box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5) !important;
+            }
+
+            #clearQueueBtn:hover {
+                box-shadow: 0 8px 25px rgba(255, 107, 107, 0.5) !important;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <h1>🎤 KTV 點歌系統</h1>
+                <div class="header-buttons">
+                    <button id="addSongBtn" class="btn btn-primary">➕ 加入歌曲</button>
+                    <button id="songListBtn" class="btn btn-secondary">📋 歌曲列表</button>
+                    <button id="controlPanelBtn" class="btn btn-secondary">🎛️ 控制面板</button>
+                    <button id="qrCodeBtn" class="btn btn-secondary">📱 QR Code</button>
+                </div>
+            </header>
+
+            <!-- 當前播放 -->
+            <section class="now-playing">
+                <h2>🎵 現正播放</h2>
+                <div id="currentSong" class="current-song-card">
+                    <div class="no-song">目前沒有歌曲播放</div>
+                </div>
+            </section>
+
+            <!-- YouTube 播放器 -->
+            <section class="player-section">
+                <div id="player-container">
+                    <div id="player"></div>
+                </div>
+            </section>
+
+            <!-- 下一首歌曲 -->
+            <section class="next-song-section">
+                <h2>⏭️ 下一首</h2>
+                <div id="nextSongDisplay" class="queue-list" style="max-height: 300px;">
+                    <div class="empty-queue">沒有下一首歌曲</div>
+                </div>
+            </section>
+        </div>
+
+        <!-- 添加歌曲 Modal -->
+        <div id="addSongModal" class="modal">
+            <div class="modal-content" style="max-width: 800px;">
+                <span class="close">&times;</span>
+                <h2>➕ 加入歌曲</h2>
+                
+                <!-- Tab 切換：連結 / 搜尋 -->
+                <div class="tab-navigation" style="margin-bottom: 20px;">
+                    <button class="tab-btn active" data-tab="url" id="urlTabBtn">🔗 貼上連結</button>
+                    <button class="tab-btn" data-tab="search" id="searchTabBtn">🔍 搜尋影片</button>
+                </div>
+
+                <!-- 連結輸入 Tab -->
+                <div id="urlTabContent" class="add-song-tab-content active">
+                    <form id="addSongForm">
+                        <div class="form-group">
+                            <label for="youtubeUrl">YouTube 連結</label>
+                            <input type="url" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=...">
+                            <small>貼上 YouTube 影片連結，系統會自動獲取歌名</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-large">
+                            <span id="addBtnText">加入排隊</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 搜尋 Tab -->
+                <div id="searchTabContent" class="add-song-tab-content">
+                    <div class="form-group">
+                        <label for="searchInput">搜尋關鍵字</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="searchInput" placeholder="輸入歌名、歌手或關鍵字..." style="flex: 1;">
+                            <button id="searchBtn" class="btn btn-primary" style="white-space: nowrap; padding: 12px 24px;">
+                                <span id="searchBtnText">🔍 搜尋</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 搜尋結果 -->
+                    <div id="searchResults" style="max-height: 300px; overflow-y: auto; margin-top: 20px;">
+                        <div style="text-align: center; padding: 40px; color: #999;">
+                            輸入關鍵字開始搜尋
+                        </div>
+                    </div>
+                    
+                    <!-- 分頁按鈕 -->
+                    <div id="pagination" class="pagination" style="display: none;">
+                        <button id="prevPageBtn" onclick="changePage(-1)">⬅️ 上一頁</button>
+                        <span id="pageInfo" class="pagination-info">第 1 頁</span>
+                        <button id="nextPageBtn" onclick="changePage(1)">下一頁 ➡️</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 控制面板 Modal -->
+        <div id="controlModal" class="modal">
+            <div class="modal-content" style="max-width: 700px;">
+                <span class="close">&times;</span>
+                <h2 style="text-align: center; margin-bottom: 25px;">🎛️ 控制面板</h2>
+                <!-- 控制面板內容 -->
+                <div id="controlPanelContent">
+                    <div class="control-panel">
+                        <!-- 當前歌曲資訊卡片 -->
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 25px; border-radius: 15px; margin-bottom: 25px; box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);">
+                            <div style="display: flex; gap: 20px; align-items: center;">
+                                <div id="controlThumbnail" style="flex-shrink: 0;">
+                                    <div style="width: 140px; height: 105px; background: rgba(255, 255, 255, 0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, 0.7); border: 2px solid rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px);">
+                                        無縮圖
+                                    </div>
+                                </div>
+                                <div style="flex: 1; color: white;">
+                                    <p style="font-size: 0.9em; opacity: 0.9; margin-bottom: 8px; font-weight: 500;">🎵 正在播放</p>
+                                    <p id="controlCurrentSong" style="font-size: 1.3em; font-weight: 600; line-height: 1.4; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);">無</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 切歌按鈕組 -->
+                        <div style="background: rgba(246, 248, 250, 0.8); padding: 20px; border-radius: 15px; margin-bottom: 20px;">
+                            <p style="font-size: 0.85em; color: #666; margin-bottom: 12px; font-weight: 600; text-align: center;">🎵 切換歌曲</p>
+                            <div style="display: flex; gap: 12px;">
+                                <button id="prevBtn" class="btn" style="flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 1.1em; padding: 15px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
+                                    <div style="font-size: 1.3em; margin-bottom: 5px;">⏮️</div>
+                                    <div>上一首</div>
+                                </button>
+                                <button id="nextBtn" class="btn" style="flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 1.1em; padding: 15px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
+                                    <div style="font-size: 1.3em; margin-bottom: 5px;">⏭️</div>
+                                    <div>下一首</div>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 危險操作 -->
+                        <div class="control-actions">
+                            <button id="clearQueueBtn" class="btn" style="width: 100%; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); color: white; padding: 14px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 1em; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);">
+                                🗑️ 清空排隊列表
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- QR Code Modal -->
+        <div id="qrCodeModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>📱 掃描 QR Code 加入歌曲</h2>
+                <div style="text-align: center; padding: 20px;">
+                    <img src="ktv_qr_code.png" alt="KTV QR Code" style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);">
+                </div>
+            </div>
+        </div>
+
+        <!-- 歌曲列表 Modal -->
+        <div id="songListModal" class="modal">
+            <div class="modal-content" style="max-width: 900px;">
+                <span class="close">&times;</span>
+                <h2 style="margin-bottom: 25px;">📋 歌曲列表</h2>
+                
+                <!-- Tab 導航 -->
+                <div class="tab-navigation">
+                    <button class="tab-btn active" data-tab="queue">排隊中 (<span id="queueCount">0</span>)</button>
+                    <button class="tab-btn" data-tab="all">所有歌曲 (<span id="allSongsCount">0</span>)</button>
+                    <button class="tab-btn" data-tab="history">歷史記錄 (<span id="historyCount">0</span>)</button>
+                </div>
+
+                <!-- 排隊列表內容 -->
+                <div id="queueTab" class="tab-content active">
+                    <div id="queueList" class="queue-list">
+                        <div class="empty-queue">目前沒有排隊的歌曲</div>
+                    </div>
+                </div>
+
+                <!-- 所有歌曲內容 -->
+                <div id="allTab" class="tab-content">
+                    <div id="allSongsList" class="queue-list">
+                        <div class="empty-queue">目前沒有歌曲</div>
+                    </div>
+                </div>
+
+                <!-- 歷史記錄內容 -->
+                <div id="historyTab" class="tab-content">
+                    <div style="margin-bottom: 15px;">
+                        <button id="clearHistoryBtn" class="btn btn-warning">🗑️ 清除歷史記錄</button>
+                    </div>
+                    <div id="historyList" class="queue-list">
+                        <div class="empty-queue">目前沒有歷史記錄</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Firebase SDK -->
+        <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+        
+        <!-- SortableJS -->
+        <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+        
+        <!-- YouTube IFrame API -->
+        <script src="https://www.youtube.com/iframe_api"></script>
+        <script>
+            // ========================================
+            // Firebase 配置
+            // ========================================
+            const firebaseConfig = {
+                apiKey: "AIzaSyA_uBESf6A9gSP6CPhpIdISNKw5C5DHUuA",
+                authDomain: "ktv-queue-system.firebaseapp.com",
+                databaseURL: "https://ktv-queue-system-default-rtdb.asia-southeast1.firebasedatabase.app",
+                projectId: "ktv-queue-system",
+                storageBucket: "ktv-queue-system.firebasestorage.app",
+                messagingSenderId: "152366647471",
+                appId: "1:152366647471:web:d2936422e308c017b5ec5a"
+            };
+
+            // 初始化 Firebase
+            firebase.initializeApp(firebaseConfig);
+            const database = firebase.database();
+            const queueRef = database.ref('queue');
+            const currentIndexRef = database.ref('currentSongIndex');
+            const historyRef = database.ref('history');
+
+            // 全局變數
+            let player;
+            let queue = [];
+            let history = [];
+            let currentSongIndex = -1;
+            let isPlaying = false;
+            let currentTab = 'queue';
+            const YOUTUBE_API_KEY = "AIzaSyC9AM2D58fmNpyQNbU7pUsCOX7GVEWIrA4"; // YouTube API Key
+
+            // 監聽 Firebase 數據變化
+            function setupFirebaseListeners() {
+                // 監聽排隊列表變化
+                queueRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        queue = data;
+                    } else {
+                        queue = [];
+                    }
+                    updateUI();
+                });
+
+                // 監聽歷史記錄變化
+                historyRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        history = data;
+                    } else {
+                        history = [];
+                    }
+                    updateUI();
+                });
+
+                // 監聽當前播放索引變化
+                currentIndexRef.on('value', (snapshot) => {
+                    const index = snapshot.val();
+                    if (index !== null && index !== currentSongIndex) {
+                        const oldIndex = currentSongIndex;
+                        currentSongIndex = index;
+                        
+                        // 如果索引改變且播放器已準備好，載入新歌曲
+                        if (oldIndex !== index && currentSongIndex >= 0 && currentSongIndex < queue.length) {
+                            const song = queue[currentSongIndex];
+                            const videoId = extractVideoId(song.url);
+                            if (videoId && player && player.loadVideoById) {
+                                player.loadVideoById(videoId);
+                                player.playVideo();
+                            }
+                        }
+                        updateUI();
+                    }
+                });
+            }
+
+            // 保存數據到 Firebase
+            function saveToFirebase() {
+                queueRef.set(queue);
+                currentIndexRef.set(currentSongIndex);
+            }
+
+            // 保存歷史記錄到 Firebase
+            function saveHistoryToFirebase() {
+                historyRef.set(history);
+            }
+
+            // 添加到歷史記錄（去重）
+            function addToHistory(song) {
+                const videoId = extractVideoId(song.url);
+                // 檢查是否已存在
+                const exists = history.some(h => extractVideoId(h.url) === videoId);
+                if (!exists) {
+                    history.push({
+                        songName: song.songName,
+                        url: song.url,
+                        addedAt: new Date().toISOString()
+                    });
+                    saveHistoryToFirebase();
+                }
+            }
+
+            // 從 YouTube URL 提取影片 ID
+            function extractVideoId(url) {
+                if (!url) return null;
+                
+                // 方法 1: 處理 youtu.be 短網址
+                let match = url.match(/youtu\.be\/([^?&]+)/);
+                if (match) return match[1];
+                
+                // 方法 2: 處理標準 youtube.com 網址
+                match = url.match(/[?&]v=([^&]+)/);
+                if (match) return match[1];
+                
+                // 方法 3: 處理 embed 網址
+                match = url.match(/\/embed\/([^?&]+)/);
+                if (match) return match[1];
+                
+                // 方法 4: 舊的正則表達式作為最後備用
+                const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+                match = url.match(regExp);
+                return (match && match[7].length === 11) ? match[7] : null;
+            }
+
+            // 獲取 YouTube 縮圖 URL
+            function getThumbnailUrl(videoId) {
+                return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+            }
+
+            // 從 YouTube API 獲取影片標題
+            async function getVideoTitle(videoId) {
+                console.log('🎵 Fetching title for video ID:', videoId);
+                
+                // 驗證 Video ID
+                if (!videoId || videoId.length !== 11) {
+                    console.error('❌ Invalid video ID:', videoId);
+                    return `YouTube 影片 (無效 ID)`;
+                }
+                
+                // 方法 1: 使用 YouTube Data API v3（最可靠）
+                if (YOUTUBE_API_KEY && YOUTUBE_API_KEY !== "YOUR-API-KEY") {
+                    try {
+                        // 使用 snippet 部分獲取標題
+                        const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`;
+                        console.log('🔍 Trying YouTube API v3...');
+                        console.log('📡 API URL:', apiUrl);
+                        
+                        const response = await fetch(apiUrl);
+                        console.log('📥 API Response status:', response.status);
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            console.log('📦 API Response data:', data);
+                            
+                            if (data.items && data.items.length > 0) {
+                                const title = data.items[0].snippet.title;
+                                console.log('✅ Successfully fetched from YouTube API:', title);
+                                return title;
+                            } else {
+                                console.warn('⚠️ No items found in API response');
+                            }
+                        } else {
+                            const errorText = await response.text();
+                            console.error('❌ YouTube API error:', response.status, errorText);
+                        }
+                    } catch (error) {
+                        console.error('❌ YouTube API failed:', error.message);
+                        console.error('Error details:', error);
+                    }
+                }
+                
+                // 方法 2: 使用 oEmbed API（備用）
+                try {
+                    const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+                    console.log('🔍 Trying oEmbed API...');
+                    const response = await fetch(oembedUrl);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.title) {
+                            console.log('✅ Successfully fetched from oEmbed:', data.title);
+                            return data.title;
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ oEmbed API failed:', error.message);
+                }
+                
+                // 方法 3: 使用 noembed.com（第二備用）
+                try {
+                    const noembedUrl = `https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`;
+                    console.log('🔍 Trying noembed.com...');
+                    const response = await fetch(noembedUrl);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.title) {
+                            console.log('✅ Successfully fetched from noembed:', data.title);
+                            return data.title;
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ noembed failed:', error.message);
+                }
+                
+                // 所有方法都失敗，返回預設名稱
+                console.warn('⚠️ All methods failed, using default name');
+                return `YouTube 影片 (${videoId})`;
+            }
+
+            // YouTube IFrame API 準備就緒時的回調
+            function onYouTubeIframeAPIReady() {
+                player = new YT.Player('player', {
+                    height: '100%',
+                    width: '100%',
+                    playerVars: {
+                        'autoplay': 0,
+                        'controls': 1,
+                        'rel': 0,
+                        'showinfo': 0,
+                        'modestbranding': 1
+                    },
+                    events: {
+                        'onReady': onPlayerReady,
+                        'onStateChange': onPlayerStateChange
+                    }
+                });
+            }
+
+            function onPlayerReady(event) {
+                console.log('Player ready');
+                setupFirebaseListeners();
+                updateUI();
+                
+                // 如果有當前歌曲，載入它
+                if (currentSongIndex >= 0 && currentSongIndex < queue.length) {
+                    const currentSong = queue[currentSongIndex];
+                    const videoId = extractVideoId(currentSong.url);
+                    if (videoId) {
+                        player.loadVideoById(videoId);
+                    }
+                }
+            }
+
+            function onPlayerStateChange(event) {
+                // 當影片結束時自動播放下一首
+                if (event.data === YT.PlayerState.ENDED) {
+                    playNext();
+                }
+                
+                // 更新播放狀態
+                if (event.data === YT.PlayerState.PLAYING) {
+                    isPlaying = true;
+                    updatePlayPauseButton();
+                } else if (event.data === YT.PlayerState.PAUSED) {
+                    isPlaying = false;
+                    updatePlayPauseButton();
+                }
+            }
+
+            // 更新 UI
+            function updateUI() {
+                updateCurrentSong();
+                updateNextSong();
+                updateQueue();
+                updateAllSongs();
+                updateHistory();
+                updateControlPanel();
+            }
+
+            // 更新當前播放的歌曲顯示
+            function updateCurrentSong() {
+                const currentSongDiv = document.getElementById('currentSong');
+                
+                if (currentSongIndex >= 0 && currentSongIndex < queue.length) {
+                    const song = queue[currentSongIndex];
+                    const videoId = extractVideoId(song.url);
+                    const thumbnailUrl = videoId ? getThumbnailUrl(videoId) : '';
+                    
+                    currentSongDiv.innerHTML = `
+                        <div class="song-info" style="display: flex; align-items: center; gap: 20px;">
+                            ${thumbnailUrl ? `
+                                <div class="current-song-thumbnail">
+                                    <img src="${thumbnailUrl}" alt="${song.songName}">
+                                </div>
+                            ` : ''}
+                            <h3 style="font-size: 1.5em; flex: 1;">${song.songName}</h3>
+                        </div>
+                    `;
+                } else {
+                    currentSongDiv.innerHTML = '<div class="no-song">目前沒有歌曲播放</div>';
+                }
+            }
+
+            // 更新下一首歌曲顯示
+            function updateNextSong() {
+                const nextSongDisplay = document.getElementById('nextSongDisplay');
+                
+                // 計算下一首歌曲（最多顯示3首）
+                const nextSongs = queue.slice(currentSongIndex + 1, currentSongIndex + 4);
+                
+                if (nextSongs.length === 0) {
+                    nextSongDisplay.innerHTML = '<div class="empty-queue">沒有下一首歌曲</div>';
+                    return;
+                }
+                
+                nextSongDisplay.innerHTML = nextSongs.map((song, index) => {
+                    const videoId = extractVideoId(song.url);
+                    const thumbnailUrl = videoId ? getThumbnailUrl(videoId) : '';
+                    
+                    return `
+                        <div class="queue-item">
+                            <span class="queue-item-number">${index + 1}</span>
+                            ${thumbnailUrl ? `
+                                <div class="queue-item-thumbnail">
+                                    <img src="${thumbnailUrl}" alt="${song.songName}" draggable="false">
+                                </div>
+                            ` : ''}
+                            <div class="queue-item-info">
+                                <h4>${song.songName}</h4>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // 更新排隊列表
+            function updateQueue() {
+                const queueList = document.getElementById('queueList');
+                const queueCount = document.getElementById('queueCount');
+                
+                // 計算排隊中的歌曲數量（不包括當前播放的）
+                const waitingQueue = queue.slice(currentSongIndex + 1);
+                queueCount.textContent = waitingQueue.length;
+                
+                if (waitingQueue.length === 0) {
+                    queueList.innerHTML = '<div class="empty-queue">目前沒有排隊的歌曲</div>';
+                    return;
+                }
+                
+                queueList.innerHTML = waitingQueue.map((song, index) => {
+                    const videoId = extractVideoId(song.url);
+                    const thumbnailUrl = videoId ? getThumbnailUrl(videoId) : '';
+                    const actualIndex = currentSongIndex + 1 + index;
+                    
+                    return `
+                        <div class="queue-item" data-index="${actualIndex}">
+                            <span class="queue-item-drag-handle">☰</span>
+                            <span class="queue-item-number">${index + 1}</span>
+                            ${thumbnailUrl ? `
+                                <div class="queue-item-thumbnail">
+                                    <img src="${thumbnailUrl}" alt="${song.songName}" draggable="false">
+                                </div>
+                            ` : ''}
+                            <div class="queue-item-info">
+                                <h4>${song.songName}</h4>
+                            </div>
+                            <div class="queue-item-actions">
+                                <button onclick="event.stopPropagation(); removeSong(${actualIndex})">刪除</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // 初始化 SortableJS
+                setupSortable();
+            }
+
+            // 設置 SortableJS
+            let sortableInstance = null;
+            function setupSortable() {
+                const queueList = document.getElementById('queueList');
+                
+                // 銷毀舊的實例
+                if (sortableInstance) {
+                    sortableInstance.destroy();
+                }
+                
+                // 創建新的 Sortable 實例
+                sortableInstance = Sortable.create(queueList, {
+                    animation: 200,
+                    easing: "cubic-bezier(1, 0, 0, 1)",
+                    ghostClass: 'sortable-ghost',
+                    chosenClass: 'sortable-chosen',
+                    dragClass: 'sortable-drag',
+                    forceFallback: true,
+                    fallbackTolerance: 3,
+                    touchStartThreshold: 5,
+                    delay: 50,
+                    delayOnTouchOnly: true,
+                    onEnd: function(evt) {
+                        const oldIndex = evt.oldIndex;
+                        const newIndex = evt.newIndex;
+                        
+                        if (oldIndex !== newIndex) {
+                            // 計算實際在 queue 中的索引
+                            const actualOldIndex = currentSongIndex + 1 + oldIndex;
+                            const actualNewIndex = currentSongIndex + 1 + newIndex;
+                            
+                            // 移動歌曲
+                            const movedSong = queue.splice(actualOldIndex, 1)[0];
+                            queue.splice(actualNewIndex, 0, movedSong);
+                            
+                            // 保存到 Firebase
+                            saveToFirebase();
+                        }
+                    }
+                });
+            }
+
+            // 更新所有歌曲列表
+            function updateAllSongs() {
+                const allSongsList = document.getElementById('allSongsList');
+                const allSongsCount = document.getElementById('allSongsCount');
+                
+                allSongsCount.textContent = queue.length;
+                
+                if (queue.length === 0) {
+                    allSongsList.innerHTML = '<div class="empty-queue">目前沒有歌曲</div>';
+                    return;
+                }
+                
+                allSongsList.innerHTML = queue.map((song, index) => {
+                    const videoId = extractVideoId(song.url);
+                    const thumbnailUrl = videoId ? getThumbnailUrl(videoId) : '';
+                    
+                    // 判斷狀態
+                    let statusClass = '';
+                    let statusText = '';
+                    if (index < currentSongIndex) {
+                        statusClass = 'completed';
+                        statusText = '✓ 已播放';
+                    } else if (index === currentSongIndex) {
+                        statusClass = 'playing';
+                        statusText = '▶ 播放中';
+                    } else {
+                        statusText = '⏳ 等待中';
+                    }
+                    
+                    return `
+                        <div class="queue-item ${statusClass}">
+                            <span class="queue-item-number">${index + 1}</span>
+                            ${thumbnailUrl ? `
+                                <div class="queue-item-thumbnail">
+                                    <img src="${thumbnailUrl}" alt="${song.songName}" draggable="false">
+                                </div>
+                            ` : ''}
+                            <div class="queue-item-info">
+                                <h4>${song.songName}</h4>
+                                <p style="font-size: 0.85em; color: #666;">${statusText}</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // 更新歷史記錄
+            function updateHistory() {
+                const historyList = document.getElementById('historyList');
+                const historyCount = document.getElementById('historyCount');
+                
+                historyCount.textContent = history.length;
+                
+                if (history.length === 0) {
+                    historyList.innerHTML = '<div class="empty-queue">目前沒有歷史記錄</div>';
+                    return;
+                }
+                
+                // 倒序顯示（最新的在上面）
+                const reversedHistory = [...history].reverse();
+                
+                historyList.innerHTML = reversedHistory.map((song) => {
+                    const videoId = extractVideoId(song.url);
+                    const thumbnailUrl = videoId ? getThumbnailUrl(videoId) : '';
+                    
+                    return `
+                        <div class="queue-item">
+                            ${thumbnailUrl ? `
+                                <div class="queue-item-thumbnail">
+                                    <img src="${thumbnailUrl}" alt="${song.songName}" draggable="false">
+                                </div>
+                            ` : ''}
+                            <div class="queue-item-info">
+                                <h4>${song.songName}</h4>
+                            </div>
+                            <div class="queue-item-actions">
+                                <button onclick="readdSong('${song.url.replace(/'/g, "\\'")}', '${song.songName.replace(/'/g, "\\'")}')">➕ 重新加入</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // 更新控制面板
+            function updateControlPanel() {
+                const controlCurrentSong = document.getElementById('controlCurrentSong');
+                const controlThumbnail = document.getElementById('controlThumbnail');
+                
+                if (currentSongIndex >= 0 && currentSongIndex < queue.length) {
+                    const song = queue[currentSongIndex];
+                    const videoId = extractVideoId(song.url);
+                    const thumbnailUrl = videoId ? getThumbnailUrl(videoId) : '';
+                    
+                    controlCurrentSong.textContent = song.songName;
+                    
+                    if (thumbnailUrl) {
+                        controlThumbnail.innerHTML = `
+                            <div class="control-panel-thumbnail">
+                                <img src="${thumbnailUrl}" alt="${song.songName}">
+                            </div>
+                        `;
+                    } else {
+                        controlThumbnail.innerHTML = `
+                            <div class="control-panel-thumbnail" style="background: rgba(255, 255, 255, 0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, 0.7); border: 2px solid rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px);">
+                                無縮圖
+                            </div>
+                        `;
+                    }
+                } else {
+                    controlCurrentSong.textContent = '無';
+                    controlThumbnail.innerHTML = `
+                        <div class="control-panel-thumbnail" style="background: rgba(255, 255, 255, 0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, 0.7); border: 2px solid rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px);">
+                            無縮圖
+                        </div>
+                    `;
+                }
+                
+                // 更新播放/暫停按鈕狀態
+                updatePlayPauseButton();
+            }
+
+            // 添加歌曲
+            function addSong(songData) {
+                queue.push(songData);
+                
+                // 添加到歷史記錄
+                addToHistory(songData);
+                
+                saveToFirebase();
+                
+                // 如果這是第一首歌，自動開始播放
+                if (queue.length === 1 && currentSongIndex === -1) {
+                    currentSongIndex = 0;
+                    playSong(0);
+                }
+            }
+
+            // 從歷史記錄重新加入
+            function readdSong(url, songName) {
+                addSong({
+                    songName: songName,
+                    url: url,
+                    addedAt: new Date().toISOString()
+                });
+            }
+
+            // 播放指定歌曲
+            function playSong(index) {
+                if (index < 0 || index >= queue.length) return;
+                
+                currentSongIndex = index;
+                const song = queue[index];
+                const videoId = extractVideoId(song.url);
+                
+                if (videoId && player && player.loadVideoById) {
+                    player.loadVideoById(videoId);
+                    player.playVideo();
+                }
+                
+                saveToFirebase();
+            }
+
+            // 播放下一首
+            function playNext() {
+                if (currentSongIndex < queue.length - 1) {
+                    playSong(currentSongIndex + 1);
+                } else {
+                    // 已經是最後一首，停止播放
+                    currentSongIndex = queue.length - 1;
+                    if (player && player.stopVideo) {
+                        player.stopVideo();
+                    }
+                    saveToFirebase();
+                }
+            }
+
+            // 播放上一首
+            function playPrevious() {
+                if (currentSongIndex > 0) {
+                    playSong(currentSongIndex - 1);
+                }
+            }
+
+            // 播放/暫停
+            function togglePlayPause() {
+                if (!player || !player.getPlayerState) {
+                    console.log('播放器尚未準備好');
+                    return;
+                }
+                
+                const state = player.getPlayerState();
+                console.log('Current player state:', state);
+                
+                if (state === YT.PlayerState.PLAYING) {
+                    player.pauseVideo();
+                    isPlaying = false;
+                } else if (state === YT.PlayerState.PAUSED || state === YT.PlayerState.CUED) {
+                    player.playVideo();
+                    isPlaying = true;
+                } else {
+                    // 如果沒有影片或其他狀態，嘗試播放當前歌曲
+                    if (currentSongIndex >= 0 && currentSongIndex < queue.length) {
+                        playSong(currentSongIndex);
+                    } else {
+                        console.log('沒有可播放的歌曲');
+                    }
+                }
+                
+                updatePlayPauseButton();
+            }
+
+            // 更新播放/暫停按鈕
+            function updatePlayPauseButton() {
+                const btn = document.getElementById('playPauseBtn');
+                if (btn) {
+                    if (player && player.getPlayerState) {
+                        const state = player.getPlayerState();
+                        if (state === YT.PlayerState.PLAYING) {
+                            btn.innerHTML = '<div style="font-size: 1.4em;">⏸️</div><div style="font-size: 0.75em; margin-top: 4px;">暫停</div>';
+                        } else {
+                            btn.innerHTML = '<div style="font-size: 1.4em;">▶️</div><div style="font-size: 0.75em; margin-top: 4px;">播放</div>';
+                        }
+                    } else {
+                        btn.innerHTML = '<div style="font-size: 1.4em;">▶️</div><div style="font-size: 0.75em; margin-top: 4px;">播放</div>';
+                    }
+                }
+            }
+
+            // 重播當前歌曲
+            function replaySong() {
+                if (player && player.seekTo) {
+                    player.seekTo(0);
+                    player.playVideo();
+                } else {
+                    console.log('播放器尚未準備好');
+                }
+            }
+
+            // 快進10秒
+            function forward() {
+                if (player && player.getCurrentTime && player.seekTo) {
+                    const currentTime = player.getCurrentTime();
+                    player.seekTo(currentTime + 10);
+                } else {
+                    console.log('播放器尚未準備好');
+                }
+            }
+
+            // 後退10秒
+            function backward() {
+                if (player && player.getCurrentTime && player.seekTo) {
+                    const currentTime = player.getCurrentTime();
+                    player.seekTo(Math.max(0, currentTime - 10));
+                } else {
+                    console.log('播放器尚未準備好');
+                }
+            }
+
+            // 停止播放
+            function stopVideo() {
+                if (player && player.stopVideo) {
+                    player.stopVideo();
+                } else {
+                    console.log('播放器尚未準備好');
+                }
+            }
+
+            // 刪除歌曲
+            function removeSong(index) {
+                queue.splice(index, 1);
+                
+                // 調整當前播放索引
+                if (index < currentSongIndex) {
+                    currentSongIndex--;
+                } else if (index === currentSongIndex) {
+                    // 如果刪除的是當前播放的歌，播放下一首
+                    if (currentSongIndex >= queue.length) {
+                        currentSongIndex = queue.length - 1;
+                    }
+                    if (currentSongIndex >= 0) {
+                        playSong(currentSongIndex);
+                    } else {
+                        if (player && player.stopVideo) {
+                            player.stopVideo();
+                        }
+                    }
+                }
+                
+                saveToFirebase();
+            }
+
+            // 清空排隊列表
+            function clearQueue() {
+                if (confirm('確定要清空所有排隊的歌曲嗎？（不包括當前播放的歌曲）')) {
+                    // 保留當前播放的歌曲
+                    if (currentSongIndex >= 0 && currentSongIndex < queue.length) {
+                        const currentSong = queue[currentSongIndex];
+                        queue = [currentSong];
+                        currentSongIndex = 0;
+                    } else {
+                        queue = [];
+                        currentSongIndex = -1;
+                        // 停止播放器
+                        if (player && player.stopVideo) {
+                            player.stopVideo();
+                        }
+                    }
+                    
+                    // 強制清空 Firebase 並重新寫入
+                    queueRef.set(null).then(() => {
+                        currentIndexRef.set(currentSongIndex).then(() => {
+                            if (queue.length > 0) {
+                                queueRef.set(queue);
+                            }
+                            updateUI();
+                        });
+                    });
+                }
+            }
+
+            // 清除歷史記錄
+            function clearHistory() {
+                if (confirm('確定要清除所有歷史記錄嗎？此操作無法復原！')) {
+                    history = [];
+                    historyRef.set(null).then(() => {
+                        updateUI();
+                    });
+                }
+            }
+
+            // Modal 控制
+            const addSongModal = document.getElementById('addSongModal');
+            const controlModal = document.getElementById('controlModal');
+            const qrCodeModal = document.getElementById('qrCodeModal');
+            const songListModal = document.getElementById('songListModal');
+            const addSongBtn = document.getElementById('addSongBtn');
+            const controlPanelBtn = document.getElementById('controlPanelBtn');
+            const qrCodeBtn = document.getElementById('qrCodeBtn');
+            const songListBtn = document.getElementById('songListBtn');
+            const closeBtns = document.getElementsByClassName('close');
+
+            addSongBtn.onclick = () => {
+                addSongModal.style.display = 'block';
+            };
+
+            songListBtn.onclick = () => {
+                songListModal.style.display = 'block';
+                updateUI();
+            };
+
+            controlPanelBtn.onclick = () => {
+                controlModal.style.display = 'block';
+                updateControlPanel();
+            };
+
+            qrCodeBtn.onclick = () => {
+                qrCodeModal.style.display = 'block';
+            };
+
+            // Tab 切換
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tabName = this.getAttribute('data-tab');
+                    
+                    // 檢查是否是加入歌曲 Modal 的 Tab
+                    if (tabName === 'url' || tabName === 'search') {
+                        // 加入歌曲 Modal 的 Tab 切換
+                        document.querySelectorAll('#addSongModal .tab-btn').forEach(b => b.classList.remove('active'));
+                        document.querySelectorAll('.add-song-tab-content').forEach(c => c.classList.remove('active'));
+                        
+                        this.classList.add('active');
+                        document.getElementById(tabName + 'TabContent').classList.add('active');
+                    } else {
+                        // 歌曲列表 Modal 的 Tab 切換
+                        document.querySelectorAll('#songListModal .tab-btn').forEach(b => b.classList.remove('active'));
+                        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                        
+                        this.classList.add('active');
+                        document.getElementById(tabName + 'Tab').classList.add('active');
+                        
+                        currentTab = tabName;
+                    }
+                });
+            });
+
+            // YouTube 搜尋功能
+            let searchResultsData = [];
+            let currentPage = 1;
+            let nextPageToken = null;
+            let prevPageToken = null;
+            let currentSearchQuery = '';
+
+            async function searchYouTube(query, pageToken = null) {
+                if (!query.trim()) {
+                    return;
+                }
+
+                currentSearchQuery = query;
+                const searchBtn = document.getElementById('searchBtnText');
+                const originalText = searchBtn.textContent;
+                searchBtn.innerHTML = '<span class="loading"></span> 搜尋中...';
+
+                try {
+                    let apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=20&q=${encodeURIComponent(query)}&type=video&key=${YOUTUBE_API_KEY}`;
+                    if (pageToken) {
+                        apiUrl += `&pageToken=${pageToken}`;
+                    }
+                    
+                    const response = await fetch(apiUrl);
+                    
+                    if (!response.ok) {
+                        throw new Error('搜尋失敗');
+                    }
+
+                    const data = await response.json();
+                    searchResultsData = data.items;
+                    nextPageToken = data.nextPageToken || null;
+                    prevPageToken = data.prevPageToken || null;
+                    
+                    displaySearchResults(data.items);
+                    updatePagination();
+                } catch (error) {
+                    console.error('Search error:', error);
+                    document.getElementById('searchResults').innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">搜尋失敗，請稍後再試</div>';
+                } finally {
+                    searchBtn.textContent = originalText;
+                }
+            }
+
+            // 換頁
+            function changePage(direction) {
+                if (direction > 0 && nextPageToken) {
+                    currentPage++;
+                    searchYouTube(currentSearchQuery, nextPageToken);
+                } else if (direction < 0 && prevPageToken) {
+                    currentPage--;
+                    searchYouTube(currentSearchQuery, prevPageToken);
+                }
+            }
+
+            // 更新分頁按鈕
+            function updatePagination() {
+                const pagination = document.getElementById('pagination');
+                const prevBtn = document.getElementById('prevPageBtn');
+                const nextBtn = document.getElementById('nextPageBtn');
+                const pageInfo = document.getElementById('pageInfo');
+
+                if (searchResultsData.length > 0) {
+                    pagination.style.display = 'flex';
+                    prevBtn.disabled = !prevPageToken;
+                    nextBtn.disabled = !nextPageToken;
+                    pageInfo.textContent = `第 ${currentPage} 頁`;
+                } else {
+                    pagination.style.display = 'none';
+                }
+            }
+
+            // 顯示搜尋結果
+            function displaySearchResults(items) {
+                const searchResults = document.getElementById('searchResults');
+                
+                if (!items || items.length === 0) {
+                    searchResults.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">沒有找到相關影片</div>';
+                    document.getElementById('pagination').style.display = 'none';
+                    return;
+                }
+
+                searchResults.innerHTML = items.map(item => {
+                    const videoId = item.id.videoId;
+                    const title = item.snippet.title;
+                    const channelTitle = item.snippet.channelTitle;
+                    const thumbnailUrl = item.snippet.thumbnails.medium.url;
+                    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+                    return `
+                        <div class="search-result-item">
+                            <div class="search-result-thumbnail" onclick="event.stopPropagation(); window.open('${videoUrl}', '_blank'); return false;" style="cursor: pointer;">
+                                <img src="${thumbnailUrl}" alt="${title}">
+                            </div>
+                            <div class="search-result-info">
+                                <h4>${title}</h4>
+                                <p>${channelTitle}</p>
+                            </div>
+                            <button class="search-result-add-btn" data-video-id="${videoId}" onclick="event.stopPropagation(); addSongFromSearch('${videoUrl.replace(/'/g, "\\'")}', '${title.replace(/'/g, "\\'")}', this)">
+                                ➕ 加入
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // 從搜尋結果加入歌曲
+            function addSongFromSearch(url, title, button) {
+                // 檢查是否已經在隊列中
+                const videoId = extractVideoId(url);
+                const isDuplicate = queue.some(song => extractVideoId(song.url) === videoId);
+                
+                if (isDuplicate) {
+                    // 視覺反饋：已存在
+                    button.innerHTML = '⚠️ 已存在';
+                    button.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+                    setTimeout(() => {
+                        button.innerHTML = '➕ 加入';
+                        button.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    }, 2000);
+                    return;
+                }
+
+                addSong({
+                    songName: title,
+                    url: url,
+                    addedAt: new Date().toISOString()
+                });
+
+                // 成功動畫
+                button.classList.add('added');
+                button.innerHTML = '✓ 已加入';
+                button.disabled = true;
+                
+                // 添加成功的視覺反饋
+                setTimeout(() => {
+                    button.classList.remove('added');
+                }, 600);
+            }
+
+            // 搜尋按鈕點擊事件
+            document.getElementById('searchBtn').onclick = () => {
+                const query = document.getElementById('searchInput').value;
+                searchYouTube(query);
+            };
+
+            // 搜尋輸入框按 Enter 鍵
+            document.getElementById('searchInput').onkeypress = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const query = document.getElementById('searchInput').value;
+                    searchYouTube(query);
+                }
+            };
+
+            // 密碼驗證（已移除）
+
+            // 關閉 modal
+            Array.from(closeBtns).forEach(btn => {
+                btn.onclick = function() {
+                    this.parentElement.parentElement.style.display = 'none';
+                };
+            });
+
+            window.onclick = (event) => {
+                if (event.target === addSongModal) {
+                    addSongModal.style.display = 'none';
+                }
+                if (event.target === controlModal) {
+                    controlModal.style.display = 'none';
+                }
+                if (event.target === qrCodeModal) {
+                    qrCodeModal.style.display = 'none';
+                }
+                if (event.target === songListModal) {
+                    songListModal.style.display = 'none';
+                }
+            };
+
+            // 表單提交
+            document.getElementById('addSongForm').onsubmit = async (e) => {
+                e.preventDefault();
+                
+                const youtubeUrl = document.getElementById('youtubeUrl').value;
+                const submitBtn = document.getElementById('addBtnText');
+                const originalText = submitBtn.textContent;
+                
+                // 驗證 URL
+                const videoId = extractVideoId(youtubeUrl);
+                if (!videoId) {
+                    return;
+                }
+                
+                console.log('Adding song with video ID:', videoId);
+                
+                // 自動獲取歌曲名稱
+                submitBtn.innerHTML = '<span class="loading"></span> 正在獲取歌曲資訊...';
+                
+                let songName;
+                try {
+                    console.log('Calling getVideoTitle...');
+                    songName = await getVideoTitle(videoId);
+                    console.log('Got song name:', songName);
+                    
+                    // 如果獲取失敗（返回預設名稱），提示用戶
+                    if (songName.startsWith('YouTube 影片')) {
+                        submitBtn.textContent = originalText;
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error fetching title:', error);
+                    submitBtn.textContent = originalText;
+                    return;
+                }
+                
+                try {
+                    // 添加歌曲
+                    addSong({
+                        songName,
+                        url: youtubeUrl,
+                        addedAt: new Date().toISOString()
+                    });
+                    
+                    // 清空表單
+                    e.target.reset();
+                    addSongModal.style.display = 'none';
+                } catch (error) {
+                    console.error('Error adding song:', error);
+                } finally {
+                    submitBtn.textContent = originalText;
+                }
+            };
+
+            // 控制面板按鈕
+            document.getElementById('prevBtn').onclick = playPrevious;
+            document.getElementById('nextBtn').onclick = playNext;
+            document.getElementById('clearQueueBtn').onclick = clearQueue;
+            document.getElementById('clearHistoryBtn').onclick = clearHistory;
+
+            // 初始化
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('KTV System initialized');
+            });
+        </script>
+    </body>
+    </html>
