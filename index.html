@@ -316,6 +316,44 @@
             /* Player */
             .player-section {
                 background: #000;
+                position: relative;
+                transition: all 0.5s ease;
+            }
+
+            /* 假全螢幕模式 */
+            .player-section.fake-fullscreen {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                z-index: 9999 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .player-section.fake-fullscreen #player-container {
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                padding-bottom: 0 !important;
+            }
+
+            .player-section.fake-fullscreen .lyrics-section {
+                position: fixed !important;
+                bottom: 100px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                z-index: 10000 !important;
+            }
+
+            .player-section.fake-fullscreen .lyrics-line.active {
+                font-size: 3em !important;
+                text-shadow: 3px 3px 15px rgba(0, 0, 0, 0.95),
+                            0 0 30px rgba(0, 0, 0, 0.9),
+                            0 0 10px rgba(255, 255, 255, 0.4) !important;
             }
 
             #player-container {
@@ -483,6 +521,16 @@
             .queue-item-actions button:hover {
                 background: #ee5a6f;
                 transform: scale(1.05);
+            }
+
+            .queue-item-actions button.added {
+                animation: addedAnimation 0.6s ease;
+            }
+
+            .queue-item-actions button:disabled {
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                cursor: not-allowed;
+                transform: scale(1);
             }
 
             .empty-queue {
@@ -1076,12 +1124,354 @@
             #clearQueueBtn:hover {
                 box-shadow: 0 8px 25px rgba(255, 107, 107, 0.5) !important;
             }
+
+            /* 歌詞開關按鈕 */
+            .lyrics-toggle-btn {
+                position: relative;
+                width: 60px;
+                height: 30px;
+                background: #ccc;
+                border: none;
+                border-radius: 15px;
+                cursor: pointer;
+                transition: background 0.3s ease;
+                padding: 0;
+                outline: none;
+            }
+
+            .lyrics-toggle-btn.active {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+
+            .lyrics-toggle-btn::after {
+                content: '';
+                position: absolute;
+                top: 3px;
+                left: 3px;
+                width: 24px;
+                height: 24px;
+                background: white;
+                border-radius: 50%;
+                transition: left 0.3s ease;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            }
+
+            .lyrics-toggle-btn.active::after {
+                left: 33px;
+            }
+
+            /* 歌詞顯示 */
+            .lyrics-section {
+                position: absolute;
+                bottom: -60px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 90%;
+                max-width: 1000px;
+                z-index: 2147483647 !important;
+                pointer-events: none;
+                background: none !important;
+                background-color: transparent !important;
+                background-image: none !important;
+                box-shadow: none !important;
+                border: none !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+            }
+
+            .lyrics-section.show {
+                display: block;
+            }
+
+            .lyrics-toggle {
+                display: none;
+            }
+
+            .lyrics-container {
+                background: none !important;
+                background-color: transparent !important;
+                background-image: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                border-radius: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: auto;
+            }
+
+            .lyrics-container::-webkit-scrollbar {
+                display: none;
+            }
+
+            .lyrics-line {
+                padding: 0 !important;
+                margin: 0 !important;
+                font-size: 2em;
+                line-height: 1.4;
+                color: white;
+                transition: all 0.3s ease;
+                text-align: center;
+                display: none;
+                font-weight: 500;
+                background: none !important;
+                background-color: transparent !important;
+                background-image: none !important;
+                border: none !important;
+                box-shadow: none !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.95),
+                            0 0 15px rgba(0, 0, 0, 0.8);
+                position: relative;
+            }
+
+            .lyrics-line.active {
+                background: none !important;
+                background-color: transparent !important;
+                background-image: none !important;
+                border: none !important;
+                box-shadow: none !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                color: white;
+                font-size: 2.5em;
+                font-weight: 600;
+                display: block;
+                animation: fadeInLyrics 0.3s ease;
+                padding: 0 !important;
+                margin: 0 !important;
+                text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.95),
+                            0 0 20px rgba(0, 0, 0, 0.9),
+                            0 0 5px rgba(255, 255, 255, 0.3);
+            }
+
+            @keyframes fadeInLyrics {
+                from {
+                    opacity: 0;
+                    transform: translateY(10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .lyrics-line.past {
+                opacity: 0;
+                display: none;
+            }
+
+            .lyrics-line.future {
+                opacity: 0;
+                display: none;
+            }
+
+            .no-lyrics {
+                display: none;
+            }
+
+            .lyrics-loading {
+                display: none;
+            }
+
+            /* 入歌倒數提醒 */
+            .countdown-overlay {
+                position: absolute;
+                top: 50%;
+                left: 20%;
+                transform: translate(0, -50%);
+                z-index: 100;
+                font-size: 8em;
+                font-weight: bold;
+                color: white;
+                text-shadow: 0 0 30px rgba(0, 0, 0, 0.8),
+                            0 0 60px rgba(102, 126, 234, 0.6);
+                animation: countdownPulse 1s ease-out;
+                pointer-events: none;
+            }
+
+            @keyframes countdownPulse {
+                0% {
+                    opacity: 0;
+                    transform: translate(0, -50%) scale(0.5);
+                }
+                50% {
+                    opacity: 1;
+                    transform: translate(0, -50%) scale(1.2);
+                }
+                100% {
+                    opacity: 0;
+                    transform: translate(0, -50%) scale(1);
+                }
+            }
+
+            /* 倒數點樣式 - overlay 在歌詞上方居中顯示 */
+            .lyrics-countdown {
+                font-size: 1.5em;
+                letter-spacing: 0.01em;    /* 減少間距 (原本 0.1em) */
+                text-align: center;
+                position: absolute;        /* 改為絕對定位，不影響其他歌詞的位置 */
+                top: 17%;                  /* 垂直居中偏上 */
+                left: 39%;                 /* 水平居中 */
+                transform: translate(-50%, -50%);  /* 精確居中 */
+                z-index: 10;               /* 確保倒數點在最上層 */
+                width: 190%;               /* 佔滿寬度確保居中 */
+            }
+
+            .countdown-dot {
+                display: inline-block;
+                margin: 0 0.005em;         /* 減少額外間距 (原本 0.01em) */
+                opacity: 1;
+                text-shadow: 0 0 10px rgba(255, 255, 255, 0.8),
+                            0 0 20px rgba(255, 255, 255, 0.5);
+            }
+
+            /* 倒數點消失動畫 - 使用 CSS 動畫避免 setTimeout 問題 */
+            .lyrics-countdown.active .countdown-dot.dot-1 {
+                animation: dotFadeOut 0.3s ease-out 0.9s forwards;
+            }
+
+            .lyrics-countdown.active .countdown-dot.dot-2 {
+                animation: dotFadeOut 0.3s ease-out 1.8s forwards;
+            }
+
+            .lyrics-countdown.active .countdown-dot.dot-3 {
+                animation: dotFadeOut 0.3s ease-out 2.7s forwards;
+            }
+
+            @keyframes dotFadeOut {
+                from {
+                    opacity: 1;
+                }
+                to {
+                    opacity: 0;
+                }
+            }
+
+            .lyrics-toggle {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin-bottom: 12px;
+            }
+
+            .lyrics-toggle h2 {
+                margin: 0;
+                font-size: 1.5em;
+            }
+
+            .lyrics-btn {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: 600;
+                transition: all 0.3s ease;
+                font-size: 0.9em;
+            }
+
+            .lyrics-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            }
+
+            /* Toast 提示樣式 */
+            .toast {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                color: white;
+                padding: 16px 24px;
+                border-radius: 12px;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+                z-index: 10000;
+                font-size: 1em;
+                font-weight: 600;
+                animation: toastAnimation 0.6s ease;
+                backdrop-filter: blur(10px);
+                border: 2px solid rgba(255, 255, 255, 0.2);
+            }
+
+            @keyframes toastAnimation {
+                0% {
+                    transform: scale(1);
+                    opacity: 0;
+                }
+                50% {
+                    transform: scale(1.2) rotate(5deg);
+                    opacity: 1;
+                }
+                100% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+            }
+
+            @media (max-width: 768px) {
+                .lyrics-section {
+                    bottom: -30px;
+                    width: 95%;
+                    background: none !important;
+                    background-color: transparent !important;
+                    background-image: none !important;
+                    backdrop-filter: none !important;
+                    -webkit-backdrop-filter: none !important;
+                }
+
+                .lyrics-container {
+                    padding: 0 !important;
+                    background: none !important;
+                    background-color: transparent !important;
+                    background-image: none !important;
+                    backdrop-filter: none !important;
+                    -webkit-backdrop-filter: none !important;
+                }
+
+                .lyrics-line {
+                    font-size: 1.1em;
+                    background: none !important;
+                    background-color: transparent !important;
+                    background-image: none !important;
+                }
+
+                .lyrics-line.active {
+                    font-size: 1.3em;
+                    background: none !important;
+                    background-color: transparent !important;
+                    background-image: none !important;
+                }
+
+                .countdown-overlay {
+                    font-size: 5em;
+                }
+
+                .lyrics-countdown {
+                    font-size: 1.5em;
+                }
+
+                .countdown-dot {
+                    margin: 0 0.1em;
+                }
+            }
         </style>
     </head>
     <body>
         <div class="container">
             <header>
-                <h1>🎤 KTV 點歌系統</h1>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
+                    <h1 style="margin: 0;">點歌系統</h1>
+                    <img src="3.gif" alt="animation" style="width: 60px; height: 60px; object-fit: contain;">
+                    <img src="2.gif" alt="animation" style="width: 60px; height: 60px; object-fit: contain;">
+                    <img src="1.gif" alt="animation" style="width: 60px; height: 60px; object-fit: contain;">
+                </div>
                 <div class="header-buttons">
                     <button id="addSongBtn" class="btn btn-primary">➕ 加入歌曲</button>
                     <button id="songListBtn" class="btn btn-secondary">📋 歌曲列表</button>
@@ -1092,7 +1482,16 @@
 
             <!-- 當前播放 -->
             <section class="now-playing">
-                <h2>🎵 現正播放</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>🎵 現正播放</h2>
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
+                        <span id="lyricsStatusText" style="font-size: 0.8em; color: #ff6b6b; display: none;">找不到歌詞</span>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 0.9em; color: #666;">歌詞</span>
+                            <button id="toggleLyricsBtn" class="lyrics-toggle-btn"></button>
+                        </div>
+                    </div>
+                </div>
                 <div id="currentSong" class="current-song-card">
                     <div class="no-song">目前沒有歌曲播放</div>
                 </div>
@@ -1102,6 +1501,13 @@
             <section class="player-section">
                 <div id="player-container">
                     <div id="player"></div>
+                    
+                    <!-- 歌詞顯示疊加在影片上 -->
+                    <section class="lyrics-section" id="lyricsSection">
+                        <div class="lyrics-container" id="lyricsContainer">
+                            <div class="no-lyrics"></div>
+                        </div>
+                    </section>
                 </div>
             </section>
 
@@ -1195,7 +1601,7 @@
                         <!-- 切歌按鈕組 -->
                         <div style="background: rgba(246, 248, 250, 0.8); padding: 20px; border-radius: 15px; margin-bottom: 20px;">
                             <p style="font-size: 0.85em; color: #666; margin-bottom: 12px; font-weight: 600; text-align: center;">🎵 切換歌曲</p>
-                            <div style="display: flex; gap: 12px;">
+                            <div style="display: flex; gap: 12px; margin-bottom: 12px;">
                                 <button id="prevBtn" class="btn" style="flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 1.1em; padding: 15px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
                                     <div style="font-size: 1.3em; margin-bottom: 5px;">⏮️</div>
                                     <div>上一首</div>
@@ -1204,7 +1610,14 @@
                                     <div style="font-size: 1.3em; margin-bottom: 5px;">⏭️</div>
                                     <div>下一首</div>
                                 </button>
+                                <button id="fakeFullscreenBtn" class="btn" style="flex: 1; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; font-size: 1.1em; padding: 15px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);">
+                                    <div style="font-size: 1.3em; margin-bottom: 5px;">⛶</div>
+                                    <div>大螢幕</div>
+                                </button>
                             </div>
+                            <button id="randomBtn" class="btn" style="width: 100%; background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; font-size: 1em; padding: 12px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(67, 233, 123, 0.3);">
+                                <span style="font-size: 1.2em; margin-right: 5px;">🎲</span> 隨機播放
+                            </button>
                         </div>
                         
                         <!-- 危險操作 -->
@@ -1307,10 +1720,25 @@
             let currentTab = 'queue';
             const YOUTUBE_API_KEY = "AIzaSyC9AM2D58fmNpyQNbU7pUsCOX7GVEWIrA4"; // YouTube API Key
 
+            // 歌詞相關變數
+            let currentLyrics = [];
+            let lyricsUpdateInterval = null;
+            let currentLyricsIndex = -1;
+            let lyricsEnabled = false; // 預設關閉歌詞
+            
+            // 防止 Firebase 監聽器與本地操作衝突
+            let isSavingToFirebase = false;
+
             // 監聽 Firebase 數據變化
             function setupFirebaseListeners() {
                 // 監聽排隊列表變化
                 queueRef.on('value', (snapshot) => {
+                    // 如果正在保存數據，跳過這次更新避免衝突
+                    if (isSavingToFirebase) {
+                        console.log('⏭️ Skipping Firebase update (saving in progress)');
+                        return;
+                    }
+                    
                     const data = snapshot.val();
                     if (data) {
                         queue = data;
@@ -1333,6 +1761,12 @@
 
                 // 監聽當前播放索引變化
                 currentIndexRef.on('value', (snapshot) => {
+                    // 如果正在保存數據，跳過這次更新避免衝突
+                    if (isSavingToFirebase) {
+                        console.log('⏭️ Skipping Firebase index update (saving in progress)');
+                        return;
+                    }
+                    
                     const index = snapshot.val();
                     if (index !== null && index !== currentSongIndex) {
                         const oldIndex = currentSongIndex;
@@ -1353,9 +1787,21 @@
             }
 
             // 保存數據到 Firebase
-            function saveToFirebase() {
-                queueRef.set(queue);
-                currentIndexRef.set(currentSongIndex);
+            async function saveToFirebase() {
+                try {
+                    isSavingToFirebase = true;
+                    await queueRef.set(queue);
+                    await currentIndexRef.set(currentSongIndex);
+                    console.log('✅ Data saved to Firebase successfully');
+                    
+                    // 短暫延遲後重新啟用監聽器更新
+                    setTimeout(() => {
+                        isSavingToFirebase = false;
+                    }, 500);
+                } catch (error) {
+                    console.error('❌ Error saving to Firebase:', error);
+                    isSavingToFirebase = false;
+                }
             }
 
             // 保存歷史記錄到 Firebase
@@ -1365,16 +1811,35 @@
 
             // 添加到歷史記錄（去重）
             function addToHistory(song) {
+                console.log('🎵 Adding to history:', song);
                 const videoId = extractVideoId(song.url);
-                // 檢查是否已存在
+                console.log('📹 Video ID:', videoId);
+                
+                // 檢查本地歷史是否已存在
                 const exists = history.some(h => extractVideoId(h.url) === videoId);
+                console.log('🔍 Already exists:', exists);
+                
                 if (!exists) {
-                    history.push({
+                    // 添加到本地數組開頭（最新的在前面）
+                    const newHistoryItem = {
                         songName: song.songName,
                         url: song.url,
                         addedAt: new Date().toISOString()
+                    };
+                    
+                    history.unshift(newHistoryItem);
+                    console.log('✅ Added to history:', newHistoryItem);
+                    console.log('📊 History length:', history.length);
+                    
+                    // 保存到 Firebase
+                    historyRef.set(history).then(() => {
+                        console.log('💾 Saved to Firebase successfully');
+                        updateUI();
+                    }).catch((error) => {
+                        console.error('❌ Firebase save error:', error);
                     });
-                    saveHistoryToFirebase();
+                } else {
+                    console.log('⚠️ Song already in history, skipping');
                 }
             }
 
@@ -1404,6 +1869,461 @@
             function getThumbnailUrl(videoId) {
                 return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
             }
+
+            // ========================================
+            // 歌詞功能
+            // ========================================
+
+            // 從歌曲標題解析歌手和歌名
+            function parseSongTitle(title) {
+                console.log('🎵 Parsing title:', title);
+                
+                // 移除常見的無關字詞
+                let cleanTitle = title
+                    .replace(/\(Official.*?\)/gi, '')
+                    .replace(/\[Official.*?\]/gi, '')
+                    .replace(/Official/gi, '')
+                    .replace(/MV/gi, '')
+                    .replace(/Video/gi, '')
+                    .replace(/Audio/gi, '')
+                    .replace(/Lyric.*?/gi, '')
+                    .replace(/HD/gi, '')
+                    .replace(/4K/gi, '')
+                    .replace(/\(.*?Ver.*?\)/gi, '')
+                    .replace(/\[.*?Ver.*?\]/gi, '')
+                    .trim();
+                
+                // 常見分隔符: - / | 【】
+                let artist = '';
+                let track = cleanTitle;
+                
+                // 方法 1: 使用 - 分隔
+                if (cleanTitle.includes(' - ')) {
+                    const parts = cleanTitle.split(' - ');
+                    artist = parts[0].trim();
+                    track = parts[1].trim();
+                }
+                // 方法 2: 使用 / 分隔
+                else if (cleanTitle.includes(' / ')) {
+                    const parts = cleanTitle.split(' / ');
+                    artist = parts[0].trim();
+                    track = parts[1].trim();
+                }
+                // 方法 3: 使用 | 分隔
+                else if (cleanTitle.includes(' | ')) {
+                    const parts = cleanTitle.split(' | ');
+                    artist = parts[0].trim();
+                    track = parts[1].trim();
+                }
+                // 方法 4: 使用【】分隔 (中文常見格式)
+                else if (cleanTitle.includes('【') && cleanTitle.includes('】')) {
+                    const match = cleanTitle.match(/(.+?)【(.+?)】/);
+                    if (match) {
+                        artist = match[1].trim();
+                        track = match[2].trim();
+                    }
+                }
+                
+                console.log('🎤 Parsed - Artist:', artist, 'Track:', track);
+                return { artist, track };
+            }
+
+            // 從 LRCLIB 獲取歌詞
+            async function fetchLyricsFromLRCLIB(artist, track) {
+                try {
+                    const url = `https://lrclib.net/api/search?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(track)}`;
+                    console.log('🔍 LRCLIB API URL:', url);
+                    
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        console.log('❌ LRCLIB response not ok:', response.status);
+                        return null;
+                    }
+                    
+                    const data = await response.json();
+                    console.log('📦 LRCLIB response:', data);
+                    
+                    if (data && data.length > 0) {
+                        // 取第一個結果
+                        const result = data[0];
+                        if (result.syncedLyrics) {
+                            console.log('✅ Found synced lyrics!');
+                            return result.syncedLyrics;
+                        } else if (result.plainLyrics) {
+                            console.log('⚠️ Only plain lyrics available');
+                            return result.plainLyrics;
+                        }
+                    }
+                    
+                    console.log('❌ No lyrics found in LRCLIB');
+                    return null;
+                } catch (error) {
+                    console.error('❌ LRCLIB error:', error);
+                    return null;
+                }
+            }
+
+            // 從 YouTube 描述或其他來源獲取歌詞（備用方案）
+            async function fetchLyricsBackup(songName) {
+                try {
+                    // 嘗試從歌名中提取關鍵字
+                    const cleanName = songName
+                        .replace(/\(.*?\)/g, '')
+                        .replace(/\[.*?\]/g, '')
+                        .replace(/official|mv|video|audio|lyrics?/gi, '')
+                        .trim();
+                    
+                    console.log('🔄 Trying backup search with:', cleanName);
+                    
+                    // 使用 LRCLIB 的模糊搜尋
+                    const url = `https://lrclib.net/api/search?q=${encodeURIComponent(cleanName)}`;
+                    const response = await fetch(url);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data && data.length > 0) {
+                            const result = data[0];
+                            if (result.syncedLyrics) {
+                                console.log('✅ Found lyrics via backup search!');
+                                return result.syncedLyrics;
+                            }
+                        }
+                    }
+                    
+                    return null;
+                } catch (error) {
+                    console.error('❌ Backup search error:', error);
+                    return null;
+                }
+            }
+
+            // 解析 LRC 格式歌詞
+            function parseLRC(lrcText) {
+                if (!lrcText) return [];
+                
+                const lines = lrcText.split('\n');
+                const lyrics = [];
+                
+                for (const line of lines) {
+                    // 匹配時間標籤 [mm:ss.xx] 或 [mm:ss]
+                    const match = line.match(/\[(\d{2}):(\d{2})\.?(\d{2})?\](.*)/);
+                    if (match) {
+                        const minutes = parseInt(match[1]);
+                        const seconds = parseInt(match[2]);
+                        const centiseconds = match[3] ? parseInt(match[3]) : 0;
+                        const text = match[4].trim();
+                        
+                        // 轉換為秒
+                        const time = minutes * 60 + seconds + centiseconds / 100;
+                        
+                        if (text) {  // 只添加有文字的行
+                            lyrics.push({ time, text });
+                        }
+                    }
+                }
+                
+                // 按時間排序
+                lyrics.sort((a, b) => a.time - b.time);
+                
+                console.log('📝 Parsed lyrics:', lyrics.length, 'lines');
+                return lyrics;
+            }
+
+            // 載入歌詞
+            async function loadLyrics(songName) {
+                try {
+                    console.log('🎵 Loading lyrics for:', songName);
+                    
+                    const lyricsContainer = document.getElementById('lyricsContainer');
+                    const toggleBtn = document.getElementById('toggleLyricsBtn');
+                    const statusText = document.getElementById('lyricsStatusText');
+                    
+                    // 重置按鈕狀態和提示文字
+                    if (toggleBtn) {
+                        toggleBtn.disabled = false;
+                        toggleBtn.style.opacity = '1';
+                        toggleBtn.style.cursor = 'pointer';
+                    }
+                    if (statusText) {
+                        statusText.style.display = 'none';
+                    }
+                    
+                    if (!lyricsContainer) {
+                        console.error('❌ Lyrics container not found');
+                        return;
+                    }
+                    
+                    // 顯示載入中
+                    lyricsContainer.innerHTML = '<div class="lyrics-loading"><span class="loading"></span> 正在載入歌詞...</div>';
+                    
+                    // 解析歌名
+                    const { artist, track } = parseSongTitle(songName);
+                    
+                    if (!track) {
+                        console.log('❌ Cannot parse song title');
+                        lyricsEnabled = false;
+                        const toggleBtn = document.getElementById('toggleLyricsBtn');
+                        if (toggleBtn) {
+                            toggleBtn.textContent = '🎤 顯示歌詞';
+                            toggleBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                            toggleBtn.disabled = true;
+                            toggleBtn.style.opacity = '0.5';
+                            toggleBtn.style.cursor = 'not-allowed';
+                        }
+                        lyricsContainer.innerHTML = '';
+                        return;
+                    }
+                    
+                    // 方案 1: 使用歌手和歌名搜尋
+                    let lrcText = await fetchLyricsFromLRCLIB(artist, track);
+                    
+                    // 方案 2: 只用歌名搜尋
+                    if (!lrcText && artist) {
+                        console.log('🔄 Trying without artist name...');
+                        lrcText = await fetchLyricsFromLRCLIB('', track);
+                    }
+                    
+                    // 方案 3: 使用完整歌名模糊搜尋
+                    if (!lrcText) {
+                        console.log('🔄 Trying backup search...');
+                        lrcText = await fetchLyricsBackup(songName);
+                    }
+                    
+                    // 方案 4: 嘗試移除歌手名後再搜尋
+                    if (!lrcText && track.includes('-')) {
+                        const altTrack = track.split('-')[1].trim();
+                        console.log('🔄 Trying alternative track name:', altTrack);
+                        lrcText = await fetchLyricsFromLRCLIB('', altTrack);
+                    }
+                    
+                    if (!lrcText) {
+                        console.log('❌ No lyrics found after all attempts');
+                        // 找不到歌詞，自動關閉歌詞功能並禁用按鈕，並顯示提示文字
+                        lyricsEnabled = false;
+                        const lyricsSection = document.getElementById('lyricsSection');
+                        
+                        if (lyricsSection) {
+                            lyricsSection.classList.remove('show');
+                        }
+                        if (toggleBtn) {
+                            toggleBtn.classList.remove('active');
+                            toggleBtn.disabled = true;
+                            toggleBtn.style.opacity = '0.5';
+                            toggleBtn.style.cursor = 'not-allowed';
+                        }
+                        if (statusText) {
+                            statusText.style.display = 'block';
+                        }
+                        lyricsContainer.innerHTML = '';
+                        currentLyrics = [];
+                        return;
+                    }
+                    
+                    // 找到歌詞，隱藏提示文字
+                    if (statusText) {
+                        statusText.style.display = 'none';
+                    }
+                    
+                    // 解析歌詞
+                    currentLyrics = parseLRC(lrcText);
+                    
+                    if (currentLyrics.length === 0) {
+                        // 如果是純文字歌詞（沒有時間軸）
+                        lyricsContainer.innerHTML = `<div class="lyrics-line active">${lrcText.replace(/\n/g, '<br>')}</div>`;
+                        return;
+                    }
+                    
+                    // 檢查第一句歌詞時間是否超過 10 秒，如果是，插入倒數提醒
+                    if (currentLyrics.length > 0 && currentLyrics[0].time > 10) {
+                        const firstLyricTime = currentLyrics[0].time;
+                        // 倒數點在第一句歌詞前 2.7 秒出現（實際顯示時會提早 0.5 秒，所以總共提早 3.2 秒）
+                        const countdownTime = firstLyricTime - 2.7;
+                        const countdownLyric = {
+                            time: countdownTime,
+                            text: '●●●',
+                            isCountdown: true  // 標記這是倒數提醒
+                        };
+                        // 插入到第一句歌詞之前
+                        currentLyrics.unshift(countdownLyric);
+                        
+                        // 第一句歌詞時間不變，保持原本時間
+                        // 這樣倒數點會在 firstLyricTime - 2.7 顯示
+                        // 第一句歌詞會在 firstLyricTime 顯示
+                        // 它們不會同時顯示，而是倒數點先出現2.7秒，然後第一句歌詞出現
+                        
+                        console.log('✅ 插入倒數提醒歌詞，時間:', countdownTime);
+                        console.log('✅ 第一句歌詞時間:', currentLyrics[1].time);
+                    }
+                    
+                    // 顯示歌詞
+                    displayLyrics();
+                    
+                    // 開始同步更新
+                    startLyricsSync();
+                } catch (error) {
+                    console.error('❌ Error loading lyrics:', error);
+                    const lyricsContainer = document.getElementById('lyricsContainer');
+                    if (lyricsContainer) {
+                        lyricsEnabled = false;
+                        if (toggleBtn) {
+                            toggleBtn.classList.remove('active');
+                            toggleBtn.disabled = true;
+                            toggleBtn.style.opacity = '0.5';
+                            toggleBtn.style.cursor = 'not-allowed';
+                        }
+                        lyricsContainer.innerHTML = '';
+                    }
+                }
+            }
+
+            // 顯示歌詞
+            function displayLyrics() {
+                const lyricsContainer = document.getElementById('lyricsContainer');
+                
+                if (currentLyrics.length === 0) {
+                    lyricsContainer.innerHTML = '';
+                    return;
+                }
+                
+                // 顯示歌詞 - 倒數點和第一句歌詞分開但視覺上組合
+                let html = '';
+                let hasCountdown = false;
+                let countdownIndex = -1;
+                let firstLyricIndex = -1;
+                
+                // 找到倒數和第一句歌詞的索引
+                currentLyrics.forEach((line, index) => {
+                    if (line.isCountdown) {
+                        hasCountdown = true;
+                        countdownIndex = index;
+                    } else if (firstLyricIndex === -1) {
+                        firstLyricIndex = index;
+                    }
+                });
+                
+                // 生成 HTML
+                currentLyrics.forEach((line, index) => {
+                    if (line.isCountdown) {
+                        // 倒數點單獨一行
+                        html += `<div class="lyrics-line lyrics-countdown" data-index="${index}" data-time="${line.time}">
+                            <span class="countdown-dot dot-1">●</span>
+                            <span class="countdown-dot dot-2">●</span>
+                            <span class="countdown-dot dot-3">●</span>
+                        </div>`;
+                        console.log('🔵 Generated countdown HTML at index:', index, 'time:', line.time);
+                    } else if (hasCountdown && index === firstLyricIndex) {
+                        // 第一句歌詞（有倒數時添加特殊 class）
+                        html += `<div class="lyrics-line first-lyric-with-countdown" data-index="${index}" data-time="${line.time}">${line.text}</div>`;
+                        console.log('🔵 Generated first lyric HTML at index:', index, 'time:', line.time);
+                    } else {
+                        // 其他歌詞
+                        html += `<div class="lyrics-line" data-index="${index}" data-time="${line.time}">${line.text}</div>`;
+                    }
+                });
+                
+                lyricsContainer.innerHTML = html;
+            }
+
+            // 開始歌詞同步
+            function startLyricsSync() {
+                // 清除舊的定時器
+                if (lyricsUpdateInterval) {
+                    clearInterval(lyricsUpdateInterval);
+                }
+                
+                // 每 100ms 更新一次歌詞高亮
+                lyricsUpdateInterval = setInterval(updateLyricsHighlight, 100);
+                console.log('🎤 Lyrics sync started');
+            }
+
+            // 停止歌詞同步
+            function stopLyricsSync() {
+                if (lyricsUpdateInterval) {
+                    clearInterval(lyricsUpdateInterval);
+                    lyricsUpdateInterval = null;
+                }
+                console.log('⏸️ Lyrics sync stopped');
+            }
+
+            // 更新歌詞高亮
+            function updateLyricsHighlight() {
+                if (!player || !player.getCurrentTime || currentLyrics.length === 0) {
+                    return;
+                }
+                
+                const currentTime = player.getCurrentTime();
+                const ADVANCE_TIME = 0.5; // 歌詞提早 0.5 秒顯示
+                const adjustedTime = currentTime + ADVANCE_TIME;
+                
+                // 找到當前應該高亮的歌詞索引（使用提早的時間）
+                // 從前往後找第一個時間已到的歌詞
+                let newIndex = -1;
+                for (let i = currentLyrics.length - 1; i >= 0; i--) {
+                    if (adjustedTime >= currentLyrics[i].time) {
+                        newIndex = i;
+                        break;
+                    }
+                }
+                
+                // 特殊處理：如果是倒數點（index 0），檢查是否應該同時顯示第一句歌詞
+                if (newIndex === 0 && currentLyrics[0].isCountdown && currentLyrics.length > 1) {
+                    // 如果第一句歌詞的時間也到了，優先顯示倒數點
+                    // （倒數點會比第一句歌詞早0.01秒，所以倒數點會先被匹配到）
+                }
+                
+                // Debug: 每次更新都顯示（只在前 15 秒）
+                if (currentTime < 15) {
+                    console.log('🕐 Update - Time:', currentTime.toFixed(2), 'Adjusted:', adjustedTime.toFixed(2), 'newIndex:', newIndex, 'currentIndex:', currentLyricsIndex, 'First lyric time:', currentLyrics[0]?.time.toFixed(2));
+                }
+                
+                // 如果索引沒變，不需要更新
+                if (newIndex === currentLyricsIndex) {
+                    return;
+                }
+                
+                currentLyricsIndex = newIndex;
+                
+                console.log('📍 Index changed to:', newIndex, 'Is countdown?', currentLyrics[newIndex]?.isCountdown);
+                
+                // 更新所有歌詞行的樣式
+                const lyricsLines = document.querySelectorAll('.lyrics-line');
+                console.log('📝 Total lyrics lines in DOM:', lyricsLines.length);
+                
+                lyricsLines.forEach((line, index) => {
+                    line.classList.remove('active', 'past', 'future');
+                    
+                    if (index === currentLyricsIndex) {
+                        line.classList.add('active');
+                        if (line.classList.contains('lyrics-countdown')) {
+                            console.log('🟢 Countdown active at index:', index);
+                        }
+                        // 倒數點的動畫由 CSS 自動處理，不需要 JavaScript
+                    } else if (index === currentLyricsIndex + 1 && line.classList.contains('first-lyric-with-countdown')) {
+                        // 如果當前是倒數點，同時顯示第一句歌詞
+                        line.classList.add('active');
+                        console.log('🟢 First lyric also active at index:', index);
+                    } else if (index < currentLyricsIndex) {
+                        line.classList.add('past');
+                    } else {
+                        line.classList.add('future');
+                    }
+                });
+            }
+
+            // 清除歌詞
+            function clearLyrics() {
+                stopLyricsSync();
+                currentLyrics = [];
+                currentLyricsIndex = -1;
+                const lyricsContainer = document.getElementById('lyricsContainer');
+                if (lyricsContainer) {
+                    lyricsContainer.innerHTML = '';
+                }
+            }
+
+            // ========================================
+            // YouTube 相關函數
+            // ========================================
 
             // 從 YouTube API 獲取影片標題
             async function getVideoTitle(videoId) {
@@ -1494,9 +2414,14 @@
                     playerVars: {
                         'autoplay': 0,
                         'controls': 1,
-                        'rel': 0,
-                        'showinfo': 0,
-                        'modestbranding': 1
+                        'rel': 0,              // 關閉相關影片推薦
+                        'showinfo': 0,         // 關閉影片資訊
+                        'modestbranding': 1,   // 簡化 YouTube Logo
+                        'cc_load_policy': 0,   // 預設關閉字幕
+                        'iv_load_policy': 3,   // 關閉影片註解
+                        'fs': 1,               // 允許全螢幕
+                        'disablekb': 0,        // 允許鍵盤控制
+                        'playsinline': 1       // 行動裝置內嵌播放
                     },
                     events: {
                         'onReady': onPlayerReady,
@@ -1507,7 +2432,18 @@
 
             function onPlayerReady(event) {
                 console.log('Player ready');
-                setupFirebaseListeners();
+                
+                // 強制關閉字幕
+                try {
+                    if (player && player.unloadModule) {
+                        player.unloadModule('captions');
+                        player.unloadModule('cc');
+                        console.log('YouTube captions disabled');
+                    }
+                } catch (error) {
+                    console.log('Could not unload captions:', error);
+                }
+                
                 updateUI();
                 
                 // 如果有當前歌曲，載入它
@@ -1524,16 +2460,45 @@
                 // 當影片結束時自動播放下一首
                 if (event.data === YT.PlayerState.ENDED) {
                     playNext();
+                    stopLyricsSync();
                 }
                 
                 // 更新播放狀態
                 if (event.data === YT.PlayerState.PLAYING) {
                     isPlaying = true;
                     updatePlayPauseButton();
+                    // 開始歌詞同步
+                    if (currentLyrics.length > 0) {
+                        startLyricsSync();
+                    }
                 } else if (event.data === YT.PlayerState.PAUSED) {
                     isPlaying = false;
                     updatePlayPauseButton();
+                    // 暫停歌詞同步
+                    stopLyricsSync();
                 }
+            }
+
+            // 顯示 Toast 提示
+            function showToast(message) {
+                // 移除舊的 toast（如果存在）
+                const oldToast = document.querySelector('.toast');
+                if (oldToast) {
+                    oldToast.remove();
+                }
+                
+                // 創建新的 toast
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                
+                // 3 秒後自動移除
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.remove();
+                    }
+                }, 3000);
             }
 
             // 更新 UI
@@ -1666,7 +2631,7 @@
                     touchStartThreshold: 5,
                     delay: 50,
                     delayOnTouchOnly: true,
-                    onEnd: function(evt) {
+                    onEnd: async function(evt) {
                         const oldIndex = evt.oldIndex;
                         const newIndex = evt.newIndex;
                         
@@ -1680,7 +2645,10 @@
                             queue.splice(actualNewIndex, 0, movedSong);
                             
                             // 保存到 Firebase
-                            saveToFirebase();
+                            await saveToFirebase();
+                            
+                            // 立即更新 UI
+                            updateUI();
                         }
                     }
                 });
@@ -1747,9 +2715,20 @@
                 // 倒序顯示（最新的在上面）
                 const reversedHistory = [...history].reverse();
                 
-                historyList.innerHTML = reversedHistory.map((song) => {
+                historyList.innerHTML = reversedHistory.map((song, index) => {
                     const videoId = extractVideoId(song.url);
                     const thumbnailUrl = videoId ? getThumbnailUrl(videoId) : '';
+                    
+                    // 檢查這首歌是否已經在排隊列表中
+                    const isInQueue = queue.some(queueSong => extractVideoId(queueSong.url) === videoId);
+                    
+                    // 根據是否已存在設置按鈕狀態
+                    let buttonHTML;
+                    if (isInQueue) {
+                        buttonHTML = `<button id="historyBtn-${index}" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); cursor: not-allowed;" disabled>⚠️ 已存在</button>`;
+                    } else {
+                        buttonHTML = `<button id="historyBtn-${index}" onclick="readdSong('${song.url.replace(/'/g, "\\'")}', '${song.songName.replace(/'/g, "\\'")}', 'historyBtn-${index}')">➕ 重新加入</button>`;
+                    }
                     
                     return `
                         <div class="queue-item">
@@ -1762,7 +2741,7 @@
                                 <h4>${song.songName}</h4>
                             </div>
                             <div class="queue-item-actions">
-                                <button onclick="readdSong('${song.url.replace(/'/g, "\\'")}', '${song.songName.replace(/'/g, "\\'")}')">➕ 重新加入</button>
+                                ${buttonHTML}
                             </div>
                         </div>
                     `;
@@ -1808,65 +2787,272 @@
             }
 
             // 添加歌曲
-            function addSong(songData) {
+            async function addSong(songData, fromSearch = false, fromHistory = false) {
                 queue.push(songData);
                 
                 // 添加到歷史記錄
                 addToHistory(songData);
                 
-                saveToFirebase();
-                
-                // 如果這是第一首歌，自動開始播放
-                if (queue.length === 1 && currentSongIndex === -1) {
+                // 如果這是第一首歌，設置當前索引並自動播放
+                const isFirstSong = queue.length === 1 && currentSongIndex === -1;
+                if (isFirstSong) {
                     currentSongIndex = 0;
-                    playSong(0);
+                }
+                
+                // 等待 Firebase 保存完成
+                await saveToFirebase();
+                
+                // 如果是從歷史記錄加入，只更新數字，不重新渲染列表
+                if (fromHistory) {
+                    // 只更新排隊數字
+                    const queueCount = document.getElementById('queueCount');
+                    if (queueCount) {
+                        queueCount.textContent = Math.max(0, queue.length - currentSongIndex - 1);
+                    }
+                    const allSongsCount = document.getElementById('allSongsCount');
+                    if (allSongsCount) {
+                        allSongsCount.textContent = queue.length;
+                    }
+                    // 更新排隊列表和當前播放
+                    updateCurrentSong();
+                    updateNextSong();
+                    updateQueue();
+                    updateAllSongs();
+                    updateControlPanel();
+                } else {
+                    // 其他情況正常更新整個 UI
+                    updateUI();
+                }
+                
+                // 如果是第一首歌，開始播放
+                if (isFirstSong) {
+                    // 延遲一下確保 UI 更新完成
+                    setTimeout(() => {
+                        playSong(0);
+                    }, 500);
                 }
             }
 
             // 從歷史記錄重新加入
-            function readdSong(url, songName) {
-                addSong({
+            async function readdSong(url, songName, buttonId) {
+                const button = document.getElementById(buttonId);
+                
+                // 檢查是否已經在隊列中
+                const videoId = extractVideoId(url);
+                const isDuplicate = queue.some(song => extractVideoId(song.url) === videoId);
+                
+                if (isDuplicate) {
+                    // 視覺反饋：已存在（永久保持）
+                    button.innerHTML = '⚠️ 已存在';
+                    button.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+                    button.style.cursor = 'not-allowed';
+                    button.disabled = true;
+                    return;
+                }
+                
+                // 先更新按鈕狀態（在 UI 重新渲染之前）
+                button.classList.add('added');
+                button.innerHTML = '✓ 已加入';
+                button.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                button.disabled = true;
+                
+                // 然後才加入歌曲（不會重新渲染歷史記錄）
+                await addSong({
                     songName: songName,
                     url: url,
                     addedAt: new Date().toISOString()
-                });
+                }, false, true); // fromSearch = false, fromHistory = true
+                
+                // 保持動畫效果 2 秒後移除 class（但按鈕保持綠色和已加入狀態）
+                setTimeout(() => {
+                    button.classList.remove('added');
+                }, 2000);
             }
 
             // 播放指定歌曲
-            function playSong(index) {
-                if (index < 0 || index >= queue.length) return;
+            async function playSong(index) {
+                if (index < 0 || index >= queue.length) {
+                    console.log('Invalid song index:', index);
+                    return;
+                }
                 
                 currentSongIndex = index;
                 const song = queue[index];
                 const videoId = extractVideoId(song.url);
                 
-                if (videoId && player && player.loadVideoById) {
-                    player.loadVideoById(videoId);
-                    player.playVideo();
+                console.log('Playing song:', song.songName, 'videoId:', videoId);
+                
+                if (!videoId) {
+                    console.error('Invalid video ID');
+                    return;
                 }
                 
-                saveToFirebase();
+                if (!player) {
+                    console.error('Player not ready');
+                    return;
+                }
+                
+                // 顯示倒數提醒 3...2...1...
+                showCountdown();
+                
+                // 清除舊歌詞
+                clearLyrics();
+                
+                // 載入並播放影片
+                try {
+                    player.loadVideoById(videoId);
+                    player.playVideo();
+                    
+                    // 強制關閉字幕
+                    setTimeout(() => {
+                        try {
+                            if (player.unloadModule) {
+                                player.unloadModule('captions');
+                                player.unloadModule('cc');
+                            }
+                        } catch (error) {
+                            console.log('Could not unload captions on play:', error);
+                        }
+                    }, 500);
+                    
+                    console.log('Video loaded and playing');
+                } catch (error) {
+                    console.error('Error playing video:', error);
+                }
+                
+                // 在後台載入歌詞（如果已開啟）
+                if (lyricsEnabled) {
+                    setTimeout(() => {
+                        loadLyrics(song.songName).catch(err => {
+                            console.error('載入歌詞失敗:', err);
+                        });
+                    }, 100);
+                }
+                
+                await saveToFirebase();
+                
+                // 更新 UI 顯示當前播放歌曲
+                updateCurrentSong();
+                updateNextSong();
+            }
+
+            // 顯示入歌倒數提醒
+            function showCountdown() {
+                const playerContainer = document.getElementById('player-container');
+                const dots = ['...', '..', '.'];
+                let index = 0;
+                
+                const showDots = () => {
+                    if (index >= dots.length) return;
+                    
+                    const countdownDiv = document.createElement('div');
+                    countdownDiv.className = 'countdown-overlay';
+                    countdownDiv.textContent = dots[index];
+                    playerContainer.appendChild(countdownDiv);
+                    
+                    setTimeout(() => {
+                        countdownDiv.remove();
+                    }, 800);
+                    
+                    index++;
+                    if (index < dots.length) {
+                        setTimeout(showDots, 800);
+                    }
+                };
+                
+                showDots();
+            }
+
+            // 切換歌詞顯示
+            function toggleLyrics() {
+                lyricsEnabled = !lyricsEnabled;
+                const lyricsSection = document.getElementById('lyricsSection');
+                const toggleBtn = document.getElementById('toggleLyricsBtn');
+                
+                if (lyricsEnabled) {
+                    lyricsSection.classList.add('show');
+                    toggleBtn.classList.add('active');
+                    
+                    // 如果有當前歌曲，載入歌詞
+                    if (currentSongIndex >= 0 && currentSongIndex < queue.length) {
+                        const song = queue[currentSongIndex];
+                        loadLyrics(song.songName).catch(err => {
+                            console.error('載入歌詞失敗:', err);
+                        });
+                    }
+                } else {
+                    lyricsSection.classList.remove('show');
+                    toggleBtn.classList.remove('active');
+                    clearLyrics();
+                }
+            }
+
+            // 切換假全螢幕
+            function toggleFakeFullscreen() {
+                const playerSection = document.querySelector('.player-section');
+                const btn = document.getElementById('fakeFullscreenBtn');
+                
+                if (playerSection.classList.contains('fake-fullscreen')) {
+                    // 退出假全螢幕
+                    playerSection.classList.remove('fake-fullscreen');
+                    btn.innerHTML = '<div style="font-size: 1.3em; margin-bottom: 5px;">⛶</div><div>大螢幕</div>';
+                    btn.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+                } else {
+                    // 進入假全螢幕
+                    playerSection.classList.add('fake-fullscreen');
+                    btn.innerHTML = '<div style="font-size: 1.3em; margin-bottom: 5px;">✕</div><div>退出</div>';
+                    btn.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)';
+                }
             }
 
             // 播放下一首
-            function playNext() {
+            async function playNext() {
+                console.log('playNext called, current index:', currentSongIndex, 'queue length:', queue.length);
                 if (currentSongIndex < queue.length - 1) {
                     playSong(currentSongIndex + 1);
                 } else {
                     // 已經是最後一首，停止播放
+                    console.log('Already at last song');
                     currentSongIndex = queue.length - 1;
                     if (player && player.stopVideo) {
                         player.stopVideo();
                     }
-                    saveToFirebase();
+                    await saveToFirebase();
                 }
             }
 
             // 播放上一首
             function playPrevious() {
+                console.log('playPrevious called, current index:', currentSongIndex);
                 if (currentSongIndex > 0) {
                     playSong(currentSongIndex - 1);
+                } else {
+                    console.log('Already at first song');
                 }
+            }
+
+            // 隨機播放
+            function playRandom() {
+                console.log('playRandom called, queue length:', queue.length);
+                if (queue.length === 0) {
+                    alert('排隊列表是空的，無法隨機播放！');
+                    return;
+                }
+                
+                if (queue.length === 1) {
+                    // 只有一首歌，直接播放
+                    playSong(0);
+                    return;
+                }
+                
+                // 生成一個不同於當前索引的隨機索引
+                let randomIndex;
+                do {
+                    randomIndex = Math.floor(Math.random() * queue.length);
+                } while (randomIndex === currentSongIndex && queue.length > 1);
+                
+                console.log('Playing random song at index:', randomIndex);
+                playSong(randomIndex);
             }
 
             // 播放/暫停
@@ -1954,7 +3140,8 @@
             }
 
             // 刪除歌曲
-            function removeSong(index) {
+            async function removeSong(index) {
+                const songName = queue[index]?.songName || '歌曲';
                 queue.splice(index, 1);
                 
                 // 調整當前播放索引
@@ -1974,35 +3161,39 @@
                     }
                 }
                 
-                saveToFirebase();
+                await saveToFirebase();
+                
+                // 立即更新 UI
+                updateUI();
+                
+                // 顯示成功提示
+                showToast(`🗑️ 已刪除：${songName}`);
             }
 
             // 清空排隊列表
-            function clearQueue() {
-                if (confirm('確定要清空所有排隊的歌曲嗎？（不包括當前播放的歌曲）')) {
-                    // 保留當前播放的歌曲
-                    if (currentSongIndex >= 0 && currentSongIndex < queue.length) {
-                        const currentSong = queue[currentSongIndex];
-                        queue = [currentSong];
-                        currentSongIndex = 0;
-                    } else {
-                        queue = [];
-                        currentSongIndex = -1;
-                        // 停止播放器
-                        if (player && player.stopVideo) {
-                            player.stopVideo();
-                        }
+            async function clearQueue() {
+                if (confirm('確定要清空所有排隊的歌曲嗎？（包括當前播放的歌曲）')) {
+                    // 完全清空排隊列表
+                    queue = [];
+                    currentSongIndex = -1;
+                    
+                    // 停止播放器
+                    if (player && player.stopVideo) {
+                        player.stopVideo();
                     }
                     
-                    // 強制清空 Firebase 並重新寫入
-                    queueRef.set(null).then(() => {
-                        currentIndexRef.set(currentSongIndex).then(() => {
-                            if (queue.length > 0) {
-                                queueRef.set(queue);
-                            }
-                            updateUI();
-                        });
-                    });
+                    // 停止歌詞同步
+                    stopLyricsSync();
+                    currentLyrics = [];
+                    
+                    // 保存到 Firebase
+                    await saveToFirebase();
+                    
+                    // 立即更新 UI
+                    updateUI();
+                    
+                    // 顯示成功提示
+                    showToast('🗑️ 已清空排隊列表');
                 }
             }
 
@@ -2011,7 +3202,10 @@
                 if (confirm('確定要清除所有歷史記錄嗎？此操作無法復原！')) {
                     history = [];
                     historyRef.set(null).then(() => {
+                        // 立即更新 UI
                         updateUI();
+                        // 顯示成功提示
+                        showToast('🗑️ 已清除歷史記錄');
                     });
                 }
             }
@@ -2159,6 +3353,17 @@
                     const channelTitle = item.snippet.channelTitle.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
                     const thumbnailUrl = item.snippet.thumbnails.medium.url;
                     const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                    
+                    // 檢查這首歌是否已經在排隊列表中
+                    const isInQueue = queue.some(song => extractVideoId(song.url) === videoId);
+                    
+                    // 根據是否已存在設置按鈕
+                    let buttonHTML;
+                    if (isInQueue) {
+                        buttonHTML = `<button class="search-result-add-btn" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); cursor: not-allowed;" disabled>⚠️ 已存在</button>`;
+                    } else {
+                        buttonHTML = `<button class="search-result-add-btn" data-video-id="${videoId}" data-video-url="${videoUrl}" data-video-title="${title}">➕ 加入</button>`;
+                    }
 
                     return `
                         <div class="search-result-item">
@@ -2169,9 +3374,7 @@
                                 <h4>${title}</h4>
                                 <p>${channelTitle}</p>
                             </div>
-                            <button class="search-result-add-btn" data-video-id="${videoId}" data-video-url="${videoUrl}" data-video-title="${title}">
-                                ➕ 加入
-                            </button>
+                            ${buttonHTML}
                         </div>
                     `;
                 }).join('');
@@ -2214,13 +3417,11 @@
                 const isDuplicate = queue.some(song => extractVideoId(song.url) === videoId);
                 
                 if (isDuplicate) {
-                    // 視覺反饋：已存在
+                    // 視覺反饋：已存在（永久保持）
                     button.innerHTML = '⚠️ 已存在';
                     button.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
-                    setTimeout(() => {
-                        button.innerHTML = '➕ 加入';
-                        button.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                    }, 2000);
+                    button.style.cursor = 'not-allowed';
+                    button.disabled = true;
                     return;
                 }
 
@@ -2228,11 +3429,12 @@
                     songName: title,
                     url: url,
                     addedAt: new Date().toISOString()
-                });
+                }, true); // 傳遞 fromSearch = true
 
                 // 成功動畫
                 button.classList.add('added');
                 button.innerHTML = '✓ 已加入';
+                button.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
                 button.disabled = true;
                 
                 // 添加成功的視覺反饋
@@ -2261,7 +3463,8 @@
             // 關閉 modal
             Array.from(closeBtns).forEach(btn => {
                 btn.onclick = function() {
-                    this.parentElement.parentElement.style.display = 'none';
+                    const modal = this.parentElement.parentElement;
+                    modal.style.display = 'none';
                 };
             });
 
@@ -2334,15 +3537,39 @@
                 }
             };
 
-            // 控制面板按鈕
-            document.getElementById('prevBtn').onclick = playPrevious;
-            document.getElementById('nextBtn').onclick = playNext;
-            document.getElementById('clearQueueBtn').onclick = clearQueue;
-            document.getElementById('clearHistoryBtn').onclick = clearHistory;
-
             // 初始化
             document.addEventListener('DOMContentLoaded', () => {
                 console.log('KTV System initialized');
+                // 立即設置 Firebase 監聽器，不等待 YouTube Player
+                setupFirebaseListeners();
+                
+                // 控制面板按鈕
+                document.getElementById('prevBtn').onclick = playPrevious;
+                document.getElementById('nextBtn').onclick = playNext;
+                document.getElementById('randomBtn').onclick = playRandom;
+                document.getElementById('clearQueueBtn').onclick = clearQueue;
+                document.getElementById('clearHistoryBtn').onclick = clearHistory;
+
+                // 假全螢幕按鈕
+                document.getElementById('fakeFullscreenBtn').onclick = toggleFakeFullscreen;
+
+                // 歌詞開關按鈕
+                document.getElementById('toggleLyricsBtn').onclick = toggleLyrics;
+                
+                // 搜尋按鈕點擊事件
+                document.getElementById('searchBtn').onclick = () => {
+                    const query = document.getElementById('searchInput').value;
+                    searchYouTube(query);
+                };
+
+                // 搜尋輸入框按 Enter 鍵
+                document.getElementById('searchInput').onkeypress = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const query = document.getElementById('searchInput').value;
+                        searchYouTube(query);
+                    }
+                };
             });
         </script>
     </body>
