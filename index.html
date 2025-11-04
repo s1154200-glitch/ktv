@@ -825,6 +825,85 @@
                 flex-direction: column;
             }
 
+            /* 完整歌詞區塊 */
+            .full-lyrics-section {
+                background: rgba(255, 255, 255, 0.05);
+                padding: 30px;
+                border-radius: 20px;
+                margin-top: 30px;
+                backdrop-filter: blur(10px);
+            }
+
+            .full-lyrics-section h2 {
+                margin-bottom: 20px;
+                font-size: 1.8em;
+                text-align: center;
+            }
+
+            .full-lyrics-container {
+                max-height: 500px;
+                overflow-y: auto;
+                padding: 20px;
+                background: rgba(0, 0, 0, 0.3);
+                border-radius: 15px;
+            }
+
+            .full-lyrics-container::-webkit-scrollbar {
+                width: 8px;
+            }
+
+            .full-lyrics-container::-webkit-scrollbar-track {
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 4px;
+            }
+
+            .full-lyrics-container::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 4px;
+            }
+
+            .full-lyrics-container::-webkit-scrollbar-thumb:hover {
+                background: rgba(255, 255, 255, 0.5);
+            }
+
+            .full-lyric-line {
+                font-family: 'PingFang TC', 'Microsoft JhengHei', 'Yuanti TC', 'LiHei Pro', 'STHeiti', 'Arial', sans-serif;
+                padding: 10px 0;
+                font-size: 1.5em;
+                color: white;
+                text-align: center;
+                transition: all 0.3s ease;
+                line-height: 1.6;
+                opacity: 0.6;
+            }
+
+            .full-lyric-line.current {
+                color: #FFD700 !important;
+                font-size: 2em !important;
+                font-weight: 600 !important;
+                opacity: 1 !important;
+                animation: fadeInLyrics 0.3s ease !important;
+                background: none !important;
+                border: none !important;
+                text-shadow: 
+                    0 0 20px rgba(255, 255, 255, 0.9),
+                    0 0 30px rgba(255, 255, 255, 0.7),
+                    0 0 40px rgba(255, 255, 255, 0.5),
+                    2px 2px 4px rgba(0, 0, 0, 0.8) !important;
+            }
+
+            .full-lyric-line.past {
+                color: white;
+                opacity: 0.3;
+                font-size: 1.5em;
+            }
+
+            .full-lyric-line.future {
+                color: white;
+                opacity: 0.5;
+                font-size: 1.5em;
+            }
+
             /* Responsive */
             @media (max-width: 768px) {
                 body {
@@ -1507,6 +1586,14 @@
                 <h2>⏭️ 下一首</h2>
                 <div id="nextSongDisplay" class="queue-list" style="max-height: 300px;">
                     <div class="empty-queue">沒有下一首歌曲</div>
+                </div>
+            </section>
+
+            <!-- 完整歌詞區塊 -->
+            <section class="full-lyrics-section" id="fullLyricsSection" style="display: none;">
+                <h2>🎤 完整歌詞</h2>
+                <div class="full-lyrics-container" id="fullLyricsContainer">
+                    <div class="no-lyrics">目前沒有歌詞</div>
                 </div>
             </section>
         </div>
@@ -2453,6 +2540,49 @@
                 lyricsContainer.innerHTML = html;
             }
 
+            // 更新完整歌詞顯示
+            function updateFullLyricsDisplay() {
+                const fullLyricsSection = document.getElementById('fullLyricsSection');
+                const fullLyricsContainer = document.getElementById('fullLyricsContainer');
+                
+                if (!fullLyricsContainer) return;
+                
+                // 如果有歌詞且歌詞功能開啟，顯示完整歌詞區塊
+                if (currentLyrics.length > 0 && lyricsEnabled) {
+                    fullLyricsSection.style.display = 'block';
+                    
+                    // 生成完整歌詞 HTML（排除倒數點）
+                    let html = '';
+                    currentLyrics.forEach((line, index) => {
+                        if (!line.isCountdown) {
+                            const classList = [];
+                            if (index === currentLyricsIndex) {
+                                classList.push('current');
+                            } else if (index < currentLyricsIndex) {
+                                classList.push('past');
+                            } else {
+                                classList.push('future');
+                            }
+                            
+                            html += `<div class="full-lyric-line ${classList.join(' ')}" data-index="${index}">${line.text}</div>`;
+                        }
+                    });
+                    
+                    fullLyricsContainer.innerHTML = html || '<div class="no-lyrics">目前沒有歌詞</div>';
+                    
+                    // 自動滾動到當前歌詞
+                    if (currentLyricsIndex >= 0) {
+                        const currentLine = fullLyricsContainer.querySelector('.full-lyric-line.current');
+                        if (currentLine) {
+                            currentLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }
+                } else {
+                    fullLyricsSection.style.display = 'none';
+                    fullLyricsContainer.innerHTML = '<div class="no-lyrics">目前沒有歌詞</div>';
+                }
+            }
+
             // 開始歌詞同步
             function startLyricsSync() {
                 // 清除舊的定時器
@@ -2537,6 +2667,9 @@
                         line.classList.add('future');
                     }
                 });
+                
+                // 更新完整歌詞顯示
+                updateFullLyricsDisplay();
             }
 
             // 清除歌詞
@@ -2547,6 +2680,16 @@
                 const lyricsContainer = document.getElementById('lyricsContainer');
                 if (lyricsContainer) {
                     lyricsContainer.innerHTML = '';
+                }
+                
+                // 清除完整歌詞
+                const fullLyricsSection = document.getElementById('fullLyricsSection');
+                const fullLyricsContainer = document.getElementById('fullLyricsContainer');
+                if (fullLyricsSection) {
+                    fullLyricsSection.style.display = 'none';
+                }
+                if (fullLyricsContainer) {
+                    fullLyricsContainer.innerHTML = '<div class="no-lyrics">目前沒有歌詞</div>';
                 }
             }
 
@@ -3266,6 +3409,9 @@
                                 lyricsEnabled = false;
                                 lyricsSection.classList.remove('show');
                                 toggleBtn.classList.remove('active');
+                            } else {
+                                // 成功載入歌詞，更新完整歌詞顯示
+                                updateFullLyricsDisplay();
                             }
                         } catch (err) {
                             console.error('載入歌詞失敗:', err);
