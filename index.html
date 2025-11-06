@@ -1950,6 +1950,47 @@
                         if (oldIndex !== index && AppState.currentSongIndex >= 0 && AppState.currentSongIndex < AppState.queue.length) {
                             const song = AppState.queue[AppState.currentSongIndex];
                             const videoId = extractVideoId(song.url);
+                            
+                            console.log('🔄 Firebase 切歌: 從索引', oldIndex, '到', AppState.currentSongIndex, '歌曲:', song.songName);
+                            
+                            // 清除舊歌詞
+                            clearLyrics();
+                            
+                            // 檢查並載入新歌詞（如果歌詞功能已開啟）
+                            if (AppState.lyrics.enabled) {
+                                console.log('🎤 歌詞功能已開啟，載入新歌曲的歌詞:', song.songName);
+                                
+                                // 先檢查歌詞可用性
+                                const toggleBtn = AppState.domCache.get('toggleLyricsBtn');
+                                const statusText = AppState.domCache.get('lyricsStatusText');
+                                
+                                checkLyricsAvailability(song.songName).then(hasLyrics => {
+                                    if (toggleBtn) {
+                                        if (hasLyrics) {
+                                            toggleBtn.disabled = false;
+                                            toggleBtn.style.opacity = '1';
+                                            toggleBtn.style.cursor = 'pointer';
+                                        } else {
+                                            toggleBtn.disabled = true;
+                                            toggleBtn.style.opacity = '0.5';
+                                            toggleBtn.style.cursor = 'not-allowed';
+                                        }
+                                    }
+                                    if (statusText) {
+                                        statusText.style.display = hasLyrics ? 'none' : 'block';
+                                    }
+                                    
+                                    // 如果有歌詞，載入它
+                                    if (hasLyrics) {
+                                        loadLyrics(song.songName).catch(err => {
+                                            console.error('載入歌詞失敗:', err);
+                                        });
+                                    }
+                                }).catch(err => {
+                                    console.error('檢查歌詞失敗:', err);
+                                });
+                            }
+                            
                             if (videoId && AppState.player) {
                                 // 根據自動播放設定使用不同的方法
                                 if (AppState.settings.autoplayEnabled) {
@@ -2229,8 +2270,8 @@
                 try {
                     console.log('🔍 Checking lyrics availability for:', songName);
                     
-                    const toggleBtn = document.getElementById('toggleLyricsBtn');
-                    const statusText = document.getElementById('lyricsStatusText');
+                    const toggleBtn = AppState.domCache.get('toggleLyricsBtn');
+                    const statusText = AppState.domCache.get('lyricsStatusText');
                     
                     // 解析歌名
                     const { artist, track } = parseSongTitle(songName);
@@ -2361,8 +2402,8 @@
                     }
                 } catch (error) {
                     console.error('❌ Error checking lyrics:', error);
-                    const toggleBtn = document.getElementById('toggleLyricsBtn');
-                    const statusText = document.getElementById('lyricsStatusText');
+                    const toggleBtn = AppState.domCache.get('toggleLyricsBtn');
+                    const statusText = AppState.domCache.get('lyricsStatusText');
                     if (toggleBtn) {
                         toggleBtn.disabled = true;
                         toggleBtn.style.opacity = '0.5';
@@ -2568,9 +2609,9 @@
                     startLyricsSync();
                 } catch (error) {
                     console.error('❌ Error loading lyrics:', error);
-                    const lyricsContainer = document.getElementById('lyricsContainer');
+                    const lyricsContainer = AppState.domCache.get('lyricsContainer');
                     if (lyricsContainer) {
-                        // 不關閉 lyricsEnabled，只是清空顯示
+                        // 不關閉 AppState.lyrics.enabled，只是清空顯示
                         if (toggleBtn) {
                             toggleBtn.classList.remove('active');
                             toggleBtn.disabled = true;
@@ -3358,7 +3399,7 @@
                 // 顯示倒數提醒 3...2...1...
                 // showCountdown(); // 已移除入歌倒數提醒
                 
-                // 清除舊歌詞
+                // 清除舊歌詞（包括完整歌詞區塊）
                 clearLyrics();
                 
                 // 先靜默檢查歌詞可用性，再更新按鈕狀態
@@ -3425,15 +3466,15 @@
                 
                 // 在後台載入歌詞（如果已開啟）
                 if (AppState.lyrics.enabled) {
+                    console.log('🎤 歌詞功能已開啟，載入新歌曲的歌詞:', song.songName);
                     const lyricsSection = AppState.domCache.get('lyricsSection');
                     if (lyricsSection) {
                         lyricsSection.classList.add('show');
                     }
-                    setTimeout(() => {
-                        loadLyrics(song.songName).catch(err => {
-                            console.error('載入歌詞失敗:', err);
-                        });
-                    }, 100);
+                    // 立即載入歌詞，不延遲
+                    loadLyrics(song.songName).catch(err => {
+                        console.error('載入歌詞失敗:', err);
+                    });
                 }
                 
                 await saveToFirebase();
@@ -3560,6 +3601,8 @@
                     if (AppState.player && AppState.player.stopVideo) {
                         AppState.player.stopVideo();
                     }
+                    // 清除歌詞
+                    clearLyrics();
                     await saveToFirebase();
                 }
             }
@@ -3712,6 +3755,10 @@
                     if (AppState.currentSongIndex >= AppState.queue.length) {
                         AppState.currentSongIndex = AppState.queue.length - 1;
                     }
+                    
+                    // 清除當前歌詞
+                    clearLyrics();
+                    
                     if (AppState.currentSongIndex >= 0) {
                         playSong(AppState.currentSongIndex);
                     } else {
@@ -3739,8 +3786,9 @@
                         AppState.player.stopVideo();
                     }
                     
-                    // 停止歌詞同步
+                    // 停止歌詞同步並清除歌詞顯示
                     stopLyricsSync();
+                    clearLyrics();
                     AppState.lyrics.current = [];
                     
                     // 保存到 Firebase
