@@ -2077,24 +2077,56 @@
 
             // 從 YouTube URL 提取影片 ID
             function extractVideoId(url) {
-                if (!url) return null;
+                if (!url) {
+                    console.warn('⚠️ extractVideoId: URL is empty');
+                    return null;
+                }
+                
+                console.log('🔍 Extracting video ID from:', url);
+                
+                // 清理 URL（去除空白）
+                url = url.trim();
                 
                 // 方法 1: 處理 youtu.be 短網址
                 let match = url.match(/youtu\.be\/([^?&]+)/);
-                if (match) return match[1];
+                if (match) {
+                    console.log('✅ Matched youtu.be format:', match[1]);
+                    return match[1];
+                }
                 
                 // 方法 2: 處理標準 youtube.com 網址
                 match = url.match(/[?&]v=([^&]+)/);
-                if (match) return match[1];
+                if (match) {
+                    console.log('✅ Matched youtube.com format:', match[1]);
+                    return match[1];
+                }
                 
                 // 方法 3: 處理 embed 網址
                 match = url.match(/\/embed\/([^?&]+)/);
-                if (match) return match[1];
+                if (match) {
+                    console.log('✅ Matched embed format:', match[1]);
+                    return match[1];
+                }
                 
-                // 方法 4: 舊的正則表達式作為最後備用
+                // 方法 4: 處理 /v/ 格式
+                match = url.match(/\/v\/([^?&]+)/);
+                if (match) {
+                    console.log('✅ Matched /v/ format:', match[1]);
+                    return match[1];
+                }
+                
+                // 方法 5: 舊的正則表達式作為最後備用
                 const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
                 match = url.match(regExp);
-                return (match && match[7].length === 11) ? match[7] : null;
+                const videoId = (match && match[7].length === 11) ? match[7] : null;
+                
+                if (videoId) {
+                    console.log('✅ Matched fallback regex:', videoId);
+                } else {
+                    console.error('❌ Could not extract video ID from URL:', url);
+                }
+                
+                return videoId;
             }
 
             // 獲取 YouTube 縮圖 URL
@@ -4004,26 +4036,46 @@
             }
 
             // 從搜尋結果加入歌曲
-            function addSongFromSearch(url, title, button) {
-                // 檢查是否已經在隊列中
-                const videoId = extractVideoId(url);
-                // 移除重複檢查，允許同一首歌加入多次
-                addSong({
-                    songName: title,
-                    url: url,
-                    addedAt: new Date().toISOString()
-                }, true); // 傳遞 fromSearch = true
+            async function addSongFromSearch(url, title, button) {
+                try {
+                    // 檢查是否已經在隊列中
+                    const videoId = extractVideoId(url);
+                    
+                    // 更新按鈕狀態為載入中
+                    const originalHTML = button.innerHTML;
+                    button.innerHTML = '<span class="loading"></span>';
+                    button.disabled = true;
+                    
+                    // 等待歌曲添加完成
+                    await addSong({
+                        songName: title,
+                        url: url,
+                        addedAt: new Date().toISOString()
+                    }, true); // 傳遞 fromSearch = true
 
-                // 成功動畫
-                button.classList.add('added');
-                button.innerHTML = '✓ 已加入';
-                button.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-                button.disabled = true;
-                
-                // 添加成功的視覺反饋
-                setTimeout(() => {
-                    button.classList.remove('added');
-                }, 600);
+                    // 成功動畫
+                    button.classList.add('added');
+                    button.innerHTML = '✓ 已加入';
+                    button.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                    
+                    console.log('✅ 歌曲已成功從搜尋結果加入:', title);
+                    
+                    // 添加成功的視覺反饋
+                    setTimeout(() => {
+                        button.classList.remove('added');
+                    }, 600);
+                } catch (error) {
+                    console.error('❌ 加入歌曲失敗:', error);
+                    button.innerHTML = '❌ 失敗';
+                    button.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+                    
+                    // 3秒後恢復按鈕
+                    setTimeout(() => {
+                        button.innerHTML = '➕ 加入';
+                        button.style.background = '';
+                        button.disabled = false;
+                    }, 3000);
+                }
             }
 
             // 搜尋按鈕點擊事件
@@ -4070,13 +4122,14 @@
             document.getElementById('addSongForm').onsubmit = async (e) => {
                 e.preventDefault();
                 
-                const youtubeUrl = document.getElementById('youtubeUrl').value;
+                const youtubeUrl = document.getElementById('youtubeUrl').value.trim();
                 const submitBtn = document.getElementById('addBtnText');
                 const originalText = submitBtn.textContent;
                 
                 // 驗證 URL
                 const videoId = extractVideoId(youtubeUrl);
                 if (!videoId) {
+                    alert('請輸入有效的 YouTube 連結');
                     return;
                 }
                 
@@ -4093,28 +4146,35 @@
                     
                     // 如果獲取失敗（返回預設名稱），提示用戶
                     if (songName.startsWith('YouTube 影片')) {
+                        alert('無法獲取影片資訊，請確認連結是否正確');
                         submitBtn.textContent = originalText;
                         return;
                     }
                 } catch (error) {
                     console.error('Error fetching title:', error);
+                    alert('獲取影片資訊失敗，請稍後再試');
                     submitBtn.textContent = originalText;
                     return;
                 }
                 
                 try {
-                    // 添加歌曲
-                    addSong({
+                    submitBtn.innerHTML = '<span class="loading"></span> 正在加入歌曲...';
+                    
+                    // 等待歌曲添加完成
+                    await addSong({
                         songName,
                         url: youtubeUrl,
                         addedAt: new Date().toISOString()
                     });
+                    
+                    console.log('✅ 歌曲已成功加入:', songName);
                     
                     // 清空表單
                     e.target.reset();
                     addSongModal.style.display = 'none';
                 } catch (error) {
                     console.error('Error adding song:', error);
+                    alert('加入歌曲失敗，請稍後再試');
                 } finally {
                     submitBtn.textContent = originalText;
                 }
