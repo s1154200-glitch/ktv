@@ -3399,6 +3399,9 @@
                                 current_time: currentTime,
                                 current_index: AppState.lyrics.currentIndex,
                                 song_id: currentSong.url,
+                                song_name: currentSong.songName,
+                                lyrics_data: AppState.lyrics.current,  // 同步歌詞內容
+                                lyrics_enabled: AppState.lyrics.enabled,
                                 last_update: Date.now()
                             }).catch(err => {
                                 console.error('同步歌詞進度失敗:', err);
@@ -3433,8 +3436,38 @@
                     return;
                 }
                 
-                // 檢查是否啟用歌詞且有歌詞資料
-                if (!AppState.lyrics.enabled || AppState.lyrics.current.length === 0) {
+                // 🔥 關鍵修改：如果主裝置有歌詞數據，直接使用主裝置的歌詞
+                if (data.lyrics_data && Array.isArray(data.lyrics_data) && data.lyrics_data.length > 0) {
+                    // 如果本地沒有歌詞或歌詞內容不同，使用主裝置的歌詞
+                    if (AppState.lyrics.current.length === 0 || 
+                        AppState.lyrics.current.length !== data.lyrics_data.length) {
+                        console.log('📥 從主裝置接收歌詞數據，共', data.lyrics_data.length, '行');
+                        AppState.lyrics.current = data.lyrics_data;
+                        AppState.lyrics.enabled = data.lyrics_enabled !== false;
+                        
+                        // 顯示歌詞
+                        displayLyrics();
+                        
+                        // 更新完整歌詞顯示
+                        updateFullLyricsDisplay();
+                        
+                        // 更新歌詞按鈕狀態
+                        const toggleBtn = AppState.domCache.get('toggleLyricsBtn');
+                        if (toggleBtn) {
+                            if (AppState.lyrics.enabled) {
+                                toggleBtn.classList.add('active');
+                            } else {
+                                toggleBtn.classList.remove('active');
+                            }
+                        }
+                        
+                        console.log('✅ 已同步主裝置的歌詞內容');
+                    }
+                }
+                
+                // 如果沒有歌詞數據，直接返回
+                if (AppState.lyrics.current.length === 0) {
+                    console.log('⚠️ 主裝置也沒有歌詞數據');
                     return;
                 }
                 
