@@ -270,8 +270,8 @@
             }
 
             .current-song-thumbnail {
-                width: 250px;
-                height: 190px;
+                width: 200px;
+                height: 150px;
                 border-radius: 12px;
                 overflow: hidden;
                 box-shadow: 0 4px 8px rgba(0,0,0,0.3);
@@ -1011,7 +1011,7 @@
                 }
 
                 .current-song-card .song-info h3 {
-                    font-size: 0.85em !important;
+                    font-size: 1.2em !important;
                     margin-bottom: 8px;
                     line-height: 1.4;
                     word-wrap: break-word;
@@ -1033,8 +1033,7 @@
                 .control-panel-thumbnail {
                     width: 120px;
                     height: 90px;
-                }   
-
+                }
                 .no-song {
                     padding: 20px;
                     font-size: 1em;
@@ -2002,6 +2001,31 @@
                     gap: 10px;
                 }
 
+                /* 預設隱藏手機控制（桌面/大螢幕不顯示） */
+                .mobile-player-controls,
+                .mobile-volume-control {
+                    display: none;
+                }
+
+                /* 僅在手機尺寸顯示控制區塊 */
+                @media (max-width: 768px) {
+                    .mobile-player-controls {
+                        display: flex !important;
+                    }
+                    /* 音量面板依按鈕切換，預設仍為隱藏，由 JS 控制 */
+                    .mobile-volume-control {
+                        display: none; 
+                    }
+                }
+
+                /* 在桌面尺寸一律隱藏（雙保險，避免其他規則或行內樣式覆蓋） */
+                @media (min-width: 992px) {
+                    .mobile-player-controls,
+                    .mobile-volume-control {
+                        display: none !important;
+                    }
+                }
+
                 /* 手機版控制按鈕基礎樣式 */
                 .mobile-control-btn {
                     background: rgba(255, 255, 255, 0.95);
@@ -2322,7 +2346,9 @@
             <!-- 當前播放 -->
             <section class="now-playing">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2>🎵 現正播放</h2>
+                    <h2 style="display:flex; align-items:center; gap:10px;">
+                        🎵 現正播放
+                    </h2>
                     <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
                         <span id="lyricsStatusText" style="font-size: 0.8em; color: #ff6b6b; display: none;">找不到歌詞</span>
                         <div style="display: flex; align-items: center; gap: 15px;">
@@ -2656,7 +2682,12 @@
                 // Firebase 同步狀態
                 sync: {
                     isSaving: false,
-                    pendingUpdates: []
+                    pendingUpdates: [],
+                    // 記錄上一次從 Firebase 看到的播放狀態，避免音量更新誤觸發播放切換
+                    lastRemoteIsPlaying: null,
+                    hasSeenRemoteState: false,
+                    // 最近一次本機寫入 player_state 的時間，用於忽略短時間內的回撥
+                    lastLocalPlayerStateWriteAt: 0
                 },
                 
                 // DOM 快取
@@ -2898,20 +2929,36 @@
                 }
                 
                 console.log('📡 收到其他設備的播放狀態更新:', data);
+                // 若是我們剛剛在極短時間內才寫入（例如 800ms 內），忽略這次回撥以避免抖動
+                const now = Date.now();
+                if (now - (AppState.sync.lastLocalPlayerStateWriteAt || 0) < 800) {
+                    console.log('⏭️ 忽略短時間內的本機回撥');
+                    return;
+                }
                 
                 // 更新播放/暫停狀態
                 if (typeof data.is_playing === 'boolean') {
-                    const currentState = AppState.player.getPlayerState();
-                    const isPlaying = currentState === 1; // YT.PlayerState.PLAYING = 1
-                    
-                    if (data.is_playing && !isPlaying) {
-                        console.log('▶️ 其他設備要求播放');
-                        AppState.player.playVideo();
-                        updatePlayPauseButton(true);
-                    } else if (!data.is_playing && isPlaying) {
-                        console.log('⏸️ 其他設備要求暫停');
-                        AppState.player.pauseVideo();
-                        updatePlayPauseButton(false);
+                    // 第一次收到遠端狀態：只記錄，不觸發播放切換
+                    if (!AppState.sync.hasSeenRemoteState) {
+                        AppState.sync.lastRemoteIsPlaying = data.is_playing;
+                        AppState.sync.hasSeenRemoteState = true;
+                    } else if (AppState.sync.lastRemoteIsPlaying !== data.is_playing) {
+                        // 僅在 is_playing 改變時才處理
+                        const currentState = AppState.player.getPlayerState();
+                        const isPlaying = currentState === YT.PlayerState.PLAYING;
+                        if (data.is_playing && !isPlaying) {
+                            console.log('▶️ 其他設備要求播放');
+                            AppState.player.playVideo();
+                            updatePlayPauseButton(true);
+                        } else if (!data.is_playing && isPlaying) {
+                            console.log('⏸️ 其他設備要求暫停');
+                            AppState.player.pauseVideo();
+                            updatePlayPauseButton(false);
+                        }
+                        // 記錄最新狀態
+                        AppState.sync.lastRemoteIsPlaying = data.is_playing;
+                    } else {
+                        // 狀態未變更，忽略
                     }
                 }
                 
@@ -2999,8 +3046,12 @@
                 updateMobileVolumeDisplay(volume);
                 
                 // 同步到 Firebase
+                const state = AppState.player.getPlayerState ? AppState.player.getPlayerState() : null;
+                const isPlayingNow = state === YT.PlayerState.PLAYING;
+                AppState.sync.lastLocalPlayerStateWriteAt = Date.now();
                 playerStateRef.update({
                     volume: volume,
+                    is_playing: isPlayingNow,
                     controller_device_id: AppState.lyricsSync.deviceId,
                     last_update: Date.now()
                 }).catch(err => console.error('❌ 同步音量失敗:', err));
@@ -4297,11 +4348,11 @@
                     
                     if (!lrcText) {
                         console.log(`❌ [Request ${requestId}] No lyrics found`);
-                        // 找不到歌詞，禁用按鈕並顯示提示
+                        // 找不到歌詞，顯示提示，但保持按鈕可點擊讓使用者可再嘗試
                         if (toggleBtn) {
-                            toggleBtn.disabled = true;
-                            toggleBtn.style.opacity = '0.5';
-                            toggleBtn.style.cursor = 'not-allowed';
+                            toggleBtn.disabled = false;
+                            toggleBtn.style.opacity = '1';
+                            toggleBtn.style.cursor = 'pointer';
                         }
                         if (statusText) {
                             statusText.style.display = 'block';
@@ -4329,9 +4380,9 @@
                     const toggleBtn = AppState.domCache.get('toggleLyricsBtn');
                     const statusText = AppState.domCache.get('lyricsStatusText');
                     if (toggleBtn) {
-                        toggleBtn.disabled = true;
-                        toggleBtn.style.opacity = '0.5';
-                        toggleBtn.style.cursor = 'not-allowed';
+                        toggleBtn.disabled = false; // 保持可點擊
+                        toggleBtn.style.opacity = '1';
+                        toggleBtn.style.cursor = 'pointer';
                     }
                     if (statusText) {
                         statusText.style.display = 'block';
@@ -5097,9 +5148,14 @@
                 
                 // 設置初始音量為 80%
                 if (AppState.player && AppState.player.setVolume) {
-                    AppState.player.setVolume(80);
-                    updateVolumeDisplay(80);
-                    console.log('🔊 初始音量設置為 80%');
+                    const initialVolume = 100;
+                    AppState.player.setVolume(initialVolume);
+                    updateVolumeDisplay(initialVolume);
+                    // 同步更新手機端顯示（若元素已存在）
+                    if (typeof updateMobileVolumeDisplay === 'function') {
+                        updateMobileVolumeDisplay(initialVolume);
+                    }
+                    console.log('🔊 初始音量設置為 100%');
                 }
                 
                 // 強制關閉字幕
@@ -5231,14 +5287,14 @@
                     const thumbnailUrl = videoId ? getThumbnailUrl(videoId) : '';
                     
                     currentSongDiv.innerHTML = `
-                        <!-- 手機版現正播放資訊（與控制分離） -->
-                        <div class="mobile-now-playing" style="display: flex; align-items: center; gap: 15px; padding: 10px 0;">
+                        <!-- 現正播放資訊（橫向排列：圖片+歌名） -->
+                        <div class="song-info" style="display: flex; align-items: center; gap: 20px;">
                             ${thumbnailUrl ? `
                                 <div class="current-song-thumbnail">
                                     <img src="${thumbnailUrl}" alt="${song.songName}">
                                 </div>
                             ` : ''}
-                            <h3 style="font-size: 1.0em; line-height: 1.3; margin: 0; flex: 1; white-space: normal; word-break: break-word; overflow: visible; text-overflow: unset;">${song.songName}</h3>
+                            <h3 style="font-size: 1.5em; flex: 1;">${song.songName}</h3>
                         </div>
 
                         <!-- 手機版控制面板 -->
@@ -5249,16 +5305,25 @@
                                 ` : ''}
                             </div>
                             <div class="controls">
-                                <button id="mobilePrevBtn" class="mobile-control-btn prev-btn">
-                                    <span class="mobile-icon mobile-icon-prev">⏮</span>
+                                <button id="mobilePrevBtn" class="mobile-control-btn prev-btn" aria-label="上一首">
+                                    <svg class="icon-skip-prev" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="22" height="22" aria-hidden="true">
+                                        <path d="M18 6v12h-2V6h2zM6 18l8.5-6L6 6v12z" fill="currentColor" />
+                                    </svg>
                                 </button>
 
-                                <button id="mobilePlayPauseBtn" class="mobile-control-btn play-pause-btn">
-                                    <span class="mobile-icon" id="mobilePlayPauseIcon">▶</span>
+                                <button id="mobilePlayPauseBtn" class="mobile-control-btn play-pause-btn" aria-label="播放/暫停">
+                                    <svg id="mobilePlayIconSvg" class="icon-play" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="30" height="30" aria-hidden="true">
+                                        <path d="M8 5v14l11-7z" fill="currentColor" />
+                                    </svg>
+                                    <svg id="mobilePauseIconSvg" class="icon-pause" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="30" height="30" aria-hidden="true" style="display:none;">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor" />
+                                    </svg>
                                 </button>
 
-                                <button id="mobileNextBtn" class="mobile-control-btn next-btn">
-                                    <span class="mobile-icon mobile-icon-next">⏭</span>
+                                <button id="mobileNextBtn" class="mobile-control-btn next-btn" aria-label="下一首">
+                                    <svg class="icon-skip-next" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="22" height="22" aria-hidden="true">
+                                        <path d="M6 6l8.5 6L6 18V6zm9 12V6h2v12h-2z" fill="currentColor" />
+                                    </svg>
                                 </button>
 
                                 <button id="mobileVolumeBtn" class="mobile-control-btn volume-btn">
@@ -5274,8 +5339,8 @@
                             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
                             </svg>
-                            <input type="range" id="mobileVolumeSlider" class="volume-slider" min="0" max="100" value="80">
-                            <span class="volume-value" id="mobileVolumeValue">80</span>
+                            <input type="range" id="mobileVolumeSlider" class="volume-slider" min="0" max="100" value="100">
+                            <span class="volume-value" id="mobileVolumeValue">100</span>
                         </div>
                     `;
                     
@@ -5335,6 +5400,17 @@
                         console.log('隨機播放功能尚未實作');
                     };
                     if (mobileVolumeSlider) mobileVolumeSlider.oninput = (e) => setVolume(e.target.value);
+
+                    // 依視窗尺寸保證手機控制列在桌面隱藏（雙保險）
+                    const mobileControlsEl = document.querySelector('.mobile-player-controls');
+                    if (mobileControlsEl) {
+                        if (window.innerWidth > 768) {
+                            mobileControlsEl.style.display = 'none';
+                        } else {
+                            // 交由 CSS 控制顯示；清掉行內樣式以便媒體查詢生效
+                            mobileControlsEl.style.display = '';
+                        }
+                    }
                 }, 0);
             }
 
@@ -6036,6 +6112,12 @@
                 if (state === YT.PlayerState.PLAYING) {
                     AppState.player.pauseVideo();
                     AppState.isPlaying = false;
+                    // 同步到 Firebase：暫停
+                    playerStateRef.update({
+                        is_playing: false,
+                        controller_device_id: AppState.lyricsSync.deviceId,
+                        last_update: Date.now()
+                    }).catch(err => console.error('❌ 同步播放狀態失敗:', err));
                     
                     // 移除動畫類別
                     const mobileControls = document.querySelector('.mobile-player-controls');
@@ -6045,6 +6127,12 @@
                 } else if (state === YT.PlayerState.PAUSED || state === YT.PlayerState.CUED) {
                     AppState.player.playVideo();
                     AppState.isPlaying = true;
+                    // 同步到 Firebase：播放
+                    playerStateRef.update({
+                        is_playing: true,
+                        controller_device_id: AppState.lyricsSync.deviceId,
+                        last_update: Date.now()
+                    }).catch(err => console.error('❌ 同步播放狀態失敗:', err));
                     
                     // 添加動畫類別
                     const mobileControls = document.querySelector('.mobile-player-controls');
@@ -6088,17 +6176,19 @@
 
             // 更新手機版播放/暫停按鈕
             function updateMobilePlayPauseButton() {
-                const icon = document.getElementById('mobilePlayPauseIcon');
-                if (icon) {
-                    if (AppState.player && AppState.player.getPlayerState) {
-                        const state = AppState.player.getPlayerState();
-                        if (state === YT.PlayerState.PLAYING) {
-                            icon.textContent = '⏸';
-                        } else {
-                            icon.textContent = '▶';
-                        }
-                    } else {
-                        icon.textContent = '▶';
+                const playSvg = document.getElementById('mobilePlayIconSvg');
+                const pauseSvg = document.getElementById('mobilePauseIconSvg');
+                if (AppState.player && AppState.player.getPlayerState) {
+                    const state = AppState.player.getPlayerState();
+                    const isPlaying = state === YT.PlayerState.PLAYING;
+                    if (playSvg && pauseSvg) {
+                        playSvg.style.display = isPlaying ? 'none' : 'block';
+                        pauseSvg.style.display = isPlaying ? 'block' : 'none';
+                    }
+                } else {
+                    if (playSvg && pauseSvg) {
+                        playSvg.style.display = 'block';
+                        pauseSvg.style.display = 'none';
                     }
                 }
             }
@@ -6561,6 +6651,20 @@
                 console.log('KTV System initialized');
                 // 立即設置 Firebase 監聽器，不等待 YouTube Player
                 setupFirebaseListeners();
+
+                // 視窗尺寸變更時，保證手機控制列在桌面隱藏
+                function updateMobileControlsVisibilityBySize() {
+                    const el = document.querySelector('.mobile-player-controls');
+                    if (!el) return;
+                    if (window.innerWidth > 768) {
+                        el.style.display = 'none';
+                    } else {
+                        el.style.display = '';
+                    }
+                }
+                window.addEventListener('resize', updateMobileControlsVisibilityBySize);
+                // 初次呼叫一次
+                updateMobileControlsVisibilityBySize();
                 
                 // 控制面板按鈕
                 const prevBtn = AppState.domCache.get('prevBtn');
