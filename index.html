@@ -975,12 +975,16 @@
 
                 header {
                     flex-direction: column;
-                    text-align: center;
+                    align-items: flex-start;
                     padding: 20px;
                 }
 
                 header h1 {
                     font-size: 1.5em;
+                }
+                
+                #headerQRCode {
+                    display: none !important;
                 }
 
                 .header-buttons {
@@ -1011,7 +1015,7 @@
                 }
 
                 .current-song-card .song-info h3 {
-                    font-size: 1.2em !important;
+                    font-size: 0.5em !important;
                     margin-bottom: 8px;
                     line-height: 1.4;
                     word-wrap: break-word;
@@ -2329,11 +2333,9 @@
     <body>
         <div class="container">
             <header>
-                <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
+                <div style="display: flex; align-items: center; gap: 15px;">
                     <h1 style="margin: 0;">點歌系統</h1>
-                    <img src="3.gif" alt="animation" style="width: 60px; height: 60px; object-fit: contain;">
-                    <img src="2.gif" alt="animation" style="width: 60px; height: 60px; object-fit: contain;">
-                    <img src="1.gif" alt="animation" style="width: 60px; height: 60px; object-fit: contain;">
+                    <img id="headerQRCode" src="" alt="QR Code" style="width: 60px; height: 60px; display: none; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
                 </div>
                 <div class="header-buttons">
                     <button id="addSongBtn" class="btn btn-primary">➕ 加入歌曲</button>
@@ -2395,7 +2397,13 @@
 
             <!-- 完整歌詞區塊 -->
             <section class="full-lyrics-section" id="fullLyricsSection" style="display: none;">
-                <h2>🎤 完整歌詞</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0;">🎤 完整歌詞</h2>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 0.9em; color: #666;">自動跟隨</span>
+                        <button id="toggleAutoScrollBtn" class="lyrics-toggle-btn active"></button>
+                    </div>
+                </div>
                 <div class="full-lyrics-container" id="fullLyricsContainer">
                     <div class="no-lyrics">目前沒有歌詞</div>
                 </div>
@@ -2644,7 +2652,8 @@
                     enabled: false,
                     requestId: 0,              // 請求追蹤 ID
                     currentSongName: '',       // 當前正在載入的歌曲名稱
-                    loadingPromise: null       // 當前的載入 Promise
+                    loadingPromise: null,      // 當前的載入 Promise
+                    autoScroll: true           // 自動跟隨滾動（預設開啟）
                 },
                 
                 // 歌詞同步相關
@@ -3193,11 +3202,13 @@
                 }
                 
                 const state = AppState.player.getPlayerState();
-                const iconElement = document.getElementById('mobilePlayPauseIcon');
+                const playIcon = document.getElementById('mobilePlayIconSvg');
+                const pauseIcon = document.getElementById('mobilePauseIconSvg');
                 
                 if (state === 1) { // 正在播放
                     AppState.player.pauseVideo();
-                    if (iconElement) iconElement.textContent = '▶';
+                    if (playIcon) playIcon.style.display = 'block';
+                    if (pauseIcon) pauseIcon.style.display = 'none';
                     
                     // 同步到 Firebase
                     playerStateRef.update({
@@ -3208,7 +3219,8 @@
                     
                 } else { // 暫停、未開始或已結束
                     AppState.player.playVideo();
-                    if (iconElement) iconElement.textContent = '⏸';
+                    if (playIcon) playIcon.style.display = 'none';
+                    if (pauseIcon) pauseIcon.style.display = 'block';
                     
                     // 同步到 Firebase
                     playerStateRef.update({
@@ -3455,7 +3467,7 @@
                     
                     console.log('🔄 同步更新歌詞索引至:', newIndex);
                     
-                    // 更新歌詞顯示
+                    // 更新播放器上方的歌詞顯示
                     const lyricsLines = document.querySelectorAll('.lyrics-line');
                     lyricsLines.forEach((line, index) => {
                         line.classList.remove('active', 'past', 'future');
@@ -3469,8 +3481,29 @@
                         }
                     });
                     
-                    // 更新完整歌詞顯示
-                    updateFullLyricsDisplay();
+                    // 同步更新完整歌詞區塊（不重新生成 HTML，只更新樣式）
+                    const fullLyricsLines = document.querySelectorAll('.full-lyric-line');
+                    if (fullLyricsLines.length > 0) {
+                        fullLyricsLines.forEach((line) => {
+                            line.classList.remove('current', 'past', 'future');
+                            
+                            const dataIndex = parseInt(line.getAttribute('data-index'));
+                            if (dataIndex === AppState.lyrics.currentIndex) {
+                                line.classList.add('current');
+                                // 只在自動跟隨開啟時才滾動
+                                if (AppState.lyrics.autoScroll) {
+                                    setTimeout(() => {
+                                        line.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    }, 50);
+                                }
+                            } else if (dataIndex < AppState.lyrics.currentIndex) {
+                                line.classList.add('past');
+                            } else {
+                                line.classList.add('future');
+                            }
+                        });
+                        console.log('✅ 已同步更新完整歌詞區塊至索引:', AppState.lyrics.currentIndex);
+                    }
                 }
             }
             
@@ -5009,8 +5042,28 @@
                     }
                 });
                 
-                // 更新完整歌詞顯示
-                updateFullLyricsDisplay();
+                // 同步更新完整歌詞區塊（不重新生成 HTML，只更新樣式）
+                const fullLyricsLines = document.querySelectorAll('.full-lyric-line');
+                if (fullLyricsLines.length > 0) {
+                    fullLyricsLines.forEach((line) => {
+                        line.classList.remove('current', 'past', 'future');
+                        
+                        const dataIndex = parseInt(line.getAttribute('data-index'));
+                        if (dataIndex === AppState.lyrics.currentIndex) {
+                            line.classList.add('current');
+                            // 只在自動跟隨開啟時才滾動
+                            if (AppState.lyrics.autoScroll) {
+                                setTimeout(() => {
+                                    line.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }, 50);
+                            }
+                        } else if (dataIndex < AppState.lyrics.currentIndex) {
+                            line.classList.add('past');
+                        } else {
+                            line.classList.add('future');
+                        }
+                    });
+                }
             }
 
             // 清除歌詞
@@ -5999,6 +6052,22 @@
                 console.log('🎬 自動播放設定:', AppState.settings.autoplayEnabled ? '開啟' : '關閉');
             }
 
+            // 切換自動跟隨滾動
+            function toggleAutoScroll() {
+                AppState.lyrics.autoScroll = !AppState.lyrics.autoScroll;
+                
+                const toggleBtn = document.getElementById('toggleAutoScrollBtn');
+                if (toggleBtn) {
+                    if (AppState.lyrics.autoScroll) {
+                        toggleBtn.classList.add('active');
+                    } else {
+                        toggleBtn.classList.remove('active');
+                    }
+                }
+                
+                console.log('📜 自動跟隨設定:', AppState.lyrics.autoScroll ? '開啟' : '關閉');
+            }
+
             // 播放下一首
             async function playNext() {
                 console.log('🎵 playNext called, current index:', AppState.currentSongIndex, 'queue length:', AppState.queue.length);
@@ -6652,14 +6721,25 @@
                 // 立即設置 Firebase 監聽器，不等待 YouTube Player
                 setupFirebaseListeners();
 
-                // 視窗尺寸變更時，保證手機控制列在桌面隱藏
+                // 設置 header QR Code（只在桌面版顯示）
+                const headerQRCode = document.getElementById('headerQRCode');
+                if (headerQRCode) {
+                    headerQRCode.src = 'ktv_qr_code.png';
+                    if (window.innerWidth > 768) {
+                        headerQRCode.style.display = 'block';
+                    }
+                }
+
+                // 視窗尺寸變更時，保證手機控制列在桌面隱藏，QR Code 在手機隱藏
                 function updateMobileControlsVisibilityBySize() {
                     const el = document.querySelector('.mobile-player-controls');
                     if (!el) return;
                     if (window.innerWidth > 768) {
                         el.style.display = 'none';
+                        if (headerQRCode) headerQRCode.style.display = 'block';
                     } else {
                         el.style.display = '';
+                        if (headerQRCode) headerQRCode.style.display = 'none';
                     }
                 }
                 window.addEventListener('resize', updateMobileControlsVisibilityBySize);
@@ -6758,6 +6838,17 @@
 
                 // 歌詞開關按鈕
                 AppState.domCache.get('toggleLyricsBtn').onclick = toggleLyrics;
+                
+                // 自動跟隨開關按鈕
+                const toggleAutoScrollBtn = document.getElementById('toggleAutoScrollBtn');
+                if (toggleAutoScrollBtn) {
+                    toggleAutoScrollBtn.onclick = toggleAutoScroll;
+                    // 初始化按鈕狀態
+                    if (AppState.lyrics.autoScroll) {
+                        toggleAutoScrollBtn.classList.add('active');
+                    }
+                    console.log('📜 自動跟隨初始設定:', AppState.lyrics.autoScroll ? '開啟' : '關閉');
+                }
                 
                 // 🔥 初始化手機控制按鈕狀態
                 updateMobileControlButtonsState();
